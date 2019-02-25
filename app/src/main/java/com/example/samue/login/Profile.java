@@ -68,6 +68,8 @@ import me.kevingleason.pnwebrtc.PnRTCClient;
 import me.kevingleason.pnwebrtc.PnRTCListener;
 import util.Constants;
 
+
+
 public class Profile extends AppCompatActivity {
 Dialog mdialog;
 FloatingActionButton fab;
@@ -76,7 +78,9 @@ Button bf;
 ListView friends_list;
 FriendsAdapter adapter;
 ArrayList<Friends> al_friends;
-DatabaseHelper mDatabaseHelper;
+ArrayList<Friends> al_blocked_users;
+static DatabaseHelper mDatabaseHelper;
+//BlockedUsersHelper blockedUsersHelper;
 ArchivesDatabase mArchivesDatabase;
 private String userRecursos;
 
@@ -94,7 +98,9 @@ private String userRecursos;
         this.username = getIntent().getExtras().getString("user");
         this.archivoCompartido = "";
         this.step = 0; this.total = 0;
+        al_blocked_users = new ArrayList<>();
         mDatabaseHelper = new DatabaseHelper(this);
+        //blockedUsersHelper = new BlockedUsersHelper(this);
         mArchivesDatabase = new ArchivesDatabase(this);
         friends_list = (ListView) findViewById(R.id.friends_list);
 
@@ -129,7 +135,7 @@ private String userRecursos;
                     @Override
                     public void onClick(View v) {
                         mdialog.dismiss();
-                        mDatabaseHelper.removeData(connectTo);
+                        mDatabaseHelper.removeData(connectTo, mDatabaseHelper.FRIENDS_TABLE_NAME);
                         populateListView();
                         Toast.makeText(getApplicationContext(), "Friend "+ connectTo + " removed", Toast.LENGTH_LONG).show();
                     }
@@ -297,6 +303,12 @@ private String userRecursos;
 
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+			case R.id.see_blocked_users:
+				Intent BUintent = new Intent(this, BlockedUsersActivity.class);
+				//BUintent.putExtra("DBHelper", mDatabaseHelper);
+				startActivity(BUintent);
+				return true;
+
             case R.id.see_shared_archives:
                 // User chose the "Settings" item, show the app settings UI...
                 //Toast.makeText(getBaseContext(), "Settings clicked", Toast.LENGTH_LONG).show();
@@ -336,6 +348,7 @@ private String userRecursos;
         }
     }
 
+
     private boolean listContains(String nombre){
         boolean contains = false;
         for(Friends f : al_friends){
@@ -347,7 +360,7 @@ private String userRecursos;
     }
 
     public void addData(String newEntry){ //llamar cuando aceptemos la peticion de amistad y cuando nos la acepten
-        boolean insertData = mDatabaseHelper.addData(newEntry);
+        boolean insertData = mDatabaseHelper.addData(newEntry, mDatabaseHelper.FRIENDS_TABLE_NAME);
 
         if(insertData){
             populateListView();
@@ -355,7 +368,7 @@ private String userRecursos;
     }
 
     private void populateListView(){
-        Cursor data = mDatabaseHelper.getData();
+        Cursor data = mDatabaseHelper.getData(DatabaseHelper.FRIENDS_TABLE_NAME);
         al_friends = new ArrayList<>();
         while(data.moveToNext()){
             al_friends.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
@@ -597,36 +610,43 @@ private String userRecursos;
     private void handleFR(JSONObject jsonMsg){
         try{
             final String userFR = jsonMsg.getString("sendTo");
-            mdialog = new Dialog(Profile.this);
-            mdialog.setContentView(R.layout.dialog_acceptfriend);
-            mdialog.show();
-            TextView f_name = (TextView) mdialog.findViewById(R.id.accept_friend_tv);
-            f_name.setText("Do you want to accept " + userFR + " as a friend?");
+            // Si el usuario está bloqueado se desecha la petición silenciosamente.
+            if (!al_blocked_users.contains(userFR)){
+				mdialog = new Dialog(Profile.this);
+				mdialog.setContentView(R.layout.dialog_acceptfriend);
+				mdialog.show();
+				TextView f_name = (TextView) mdialog.findViewById(R.id.accept_friend_tv);
+				f_name.setText("Do you want to accept " + userFR + " as a friend?");
 
-            Button yes = (Button) mdialog.findViewById(R.id.accept_friend_yes);
-            Button no = (Button) mdialog.findViewById(R.id.accept_friend_no);
+				Button yes = (Button) mdialog.findViewById(R.id.accept_friend_yes);
+				Button no = (Button) mdialog.findViewById(R.id.accept_friend_no);
 
-            no.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mdialog.dismiss();
-                    cerrarConexion(userFR);
-                }
-            });
+				no.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						mdialog.dismiss();
+						cerrarConexion(userFR);
+					}
+				});
 
-            yes.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Profile.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            addData(userFR);
-                        }
-                    });
-                    FA(userFR);
-                    mdialog.dismiss();
-                }
-            });
+				yes.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						Profile.this.runOnUiThread(new Runnable() {
+							@Override
+							public void run() {
+								addData(userFR);
+							}
+						});
+						FA(userFR);
+						mdialog.dismiss();
+					}
+				});
+			}
+			///////////////////////////////////////////////////////////
+			//TODO: Cuando compruebe que funciona, quitar este else:
+			else Toast.makeText(getApplicationContext(), userFR + " ha intentado amistad pero está bloqueado", Toast.LENGTH_SHORT).show();
+			///////////////////////////////////////////////////////////
 
         }catch(Exception e){
             e.printStackTrace();
@@ -765,4 +785,6 @@ private String userRecursos;
 
         }
     }
+
+
 }

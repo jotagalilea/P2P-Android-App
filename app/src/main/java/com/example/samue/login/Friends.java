@@ -1,6 +1,8 @@
 package com.example.samue.login;
 
-public class Friends {
+import java.io.Serializable;
+
+public class Friends implements Serializable {
     String nombre;
     int img;
 
@@ -14,4 +16,14 @@ public class Friends {
     public String getNombre(){return this.nombre;}
 
     public int getImg(){return this.img;}
+
+
+    @Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Friends friends = (Friends) o;
+		return friends.nombre.equals(this.nombre);
+	}
+
 }

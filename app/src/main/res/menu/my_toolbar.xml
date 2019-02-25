@@ -6,6 +6,10 @@
         android:title="see shared files"
         app:showAsAction="never"/>
 
+    <item android:id="@+id/see_blocked_users"
+        android:title="see blocked users"
+        app:showAsAction="never"/>
+
     <item android:id="@+id/action_search"
         android:title="action_search"
         android:icon="@drawable/magnify"

@@ -31,9 +31,9 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 
     // Necesario para id de instancia
-    compile "com.google.android.gms:play-services-gcm:12.0.0"
-    compile 'io.pristine:libjingle:9694@aar'
-    compile 'me.kevingleason:pnwebrtc:1.0.6@aar'
-    compile 'com.pubnub:pubnub-android:3.7.4'
+    implementation "com.google.android.gms:play-services-gcm:12.0.0"
+    implementation 'io.pristine:libjingle:9694@aar'
+    implementation 'me.kevingleason:pnwebrtc:1.0.6@aar'
+    implementation 'com.pubnub:pubnub-android:3.7.4'
 
 }

@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">P2P Sharing</string>
     <string name="title_activity_login_successful">LoginSuccessful</string>
+    <string name="title_activity_blocked_users">BlockedUsersActivity</string>
 </resources>

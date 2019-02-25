@@ -8,64 +8,99 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-public class DatabaseHelper extends SQLiteOpenHelper{
+import java.util.HashSet;
+
+
+public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "DatabaseHelper";
     private static final String DB_NAME = "P2PDB";
-    private static final String TABLE_NAME = "friends";
-    private static final String COL1 = "id";
-    private static final String COL2 = "name";
+
+    static final String FRIENDS_TABLE_NAME = "friends";
+    private static final String FRIENDS_COL1 = "id";
+    private static final String FRIENDS_COL2 = "name";
+
+	static final String BLOCKED_TABLE_NAME = "blocked_users";
+	private static final String USERS_COL1 = "id";
+	private static final String USERS_COL2 = "name";
+
+
+	/*
+	 * Colección de todos los nombres de las tablas de la base de datos. La finalidad de esta
+	 * estructura es asegurar complejidad constante cuando se quiera consultar si una tabla existe.
+	 */
+	//TODO: Actualizar esta colección en el constructor si se añaden nuevas tablas a la aplicación.
+	private static final HashSet<String> TABLE_NAMES = new HashSet<>(2);
+
 
     public DatabaseHelper(Context context){
         super(context, DB_NAME, null, 1);
         //context.deleteDatabase(DB_NAME); //para borrar la base de datos si hace falta
+        TABLE_NAMES.add(FRIENDS_TABLE_NAME);
+        TABLE_NAMES.add(BLOCKED_TABLE_NAME);
     }
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String createTable = "CREATE TABLE " + TABLE_NAME + "(ID INTEGER PRIMARY KEY AUTOINCREMENT, " + COL2 + " TEXT);";
-        db.execSQL(createTable);
+        String createTable1 = "CREATE TABLE " + FRIENDS_TABLE_NAME + "(ID INTEGER PRIMARY KEY AUTOINCREMENT, " + FRIENDS_COL2 + " TEXT);";
+		String createTable2 = "CREATE TABLE " + BLOCKED_TABLE_NAME + "(ID INTEGER PRIMARY KEY AUTOINCREMENT, " + USERS_COL2 + " TEXT);";
+		db.execSQL(createTable1);
+        db.execSQL(createTable2);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        String dropTable = "DROP TABLE IF EXISTS " + TABLE_NAME;
-        db.execSQL(dropTable);
+        String dropTable1 = "DROP TABLE IF EXISTS " + FRIENDS_TABLE_NAME;
+		String dropTable2 = "DROP TABLE IF EXISTS " + BLOCKED_TABLE_NAME;
+		db.execSQL(dropTable1);
+        db.execSQL(dropTable2);
         onCreate(db);
     }
 
-    public boolean removeData(String name){
-        SQLiteDatabase db = this.getWritableDatabase();
-        String[] args = new String[] {name};
 
-        long result = db.delete(TABLE_NAME,  "name=?", args);
+    public boolean removeData(String name, String table){
+		SQLiteDatabase db = this.getWritableDatabase();
+		String[] args = new String[]{name};
 
-        if(result == -1){
-            return false;
-        }else{
-            return true;
-        }
+		int result = db.delete(table, "name=?", args);
+
+		if (result == -1)
+			return false;
+		else
+			return true;
     }
 
-    public boolean addData(String item){
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(COL2, item);
 
-        Log.d(TAG, "addData: Adding " + item + " to " +  TABLE_NAME);
+    public boolean addData(String item, String table){
+		SQLiteDatabase db = this.getWritableDatabase();
+		ContentValues contentValues = new ContentValues();
 
-        long result = db.insert(TABLE_NAME, null, contentValues);
+		switch (table){
+			case FRIENDS_TABLE_NAME:
+				contentValues.put(FRIENDS_COL2, item);
+				break;
+			case BLOCKED_TABLE_NAME:
+				contentValues.put(USERS_COL2, item);
+				break;
+		}
 
-        if(result == -1){
-            return false;
-        }else{
-            return true;
-        }
+		Log.d(TAG, "addData: Adding " + item + " to " + table);
+
+		long result = db.insert(table, null, contentValues);
+
+		if (result == -1)
+			return false;
+		else
+			return true;
     }
 
-    public Cursor getData(){
+
+    public Cursor getData(String table){
         SQLiteDatabase db = this.getWritableDatabase();
-        String q = "SELECT * FROM " + TABLE_NAME;
+        String q = "SELECT * FROM " + table;
         Cursor data = db.rawQuery(q, null);
         return data;
     }
+
+
+
 
 }
