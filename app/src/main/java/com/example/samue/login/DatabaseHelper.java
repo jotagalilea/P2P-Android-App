@@ -56,20 +56,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
-    public boolean removeData(String name, String table){
-		SQLiteDatabase db = this.getWritableDatabase();
-		String[] args = new String[]{name};
-
-		int result = db.delete(table, "name=?", args);
-
-		if (result == -1)
-			return false;
-		else
-			return true;
-    }
-
-
-    public boolean addData(String item, String table){
+	/**
+	 * Método para añadir datos en la tablas FRIENDS_TABLE_NAME o bien BLOCKED_TABLE_NAME.
+	 *
+	 * @param item String con el nombre del añadido.
+	 * @param table Tabla seleccionada.
+	 * @return
+	 */
+	public boolean addData(String item, String table){
 		SQLiteDatabase db = this.getWritableDatabase();
 		ContentValues contentValues = new ContentValues();
 
@@ -90,9 +84,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			return false;
 		else
 			return true;
+	}
+
+	/**
+	 * Método para eliminar datos de las tablas FRIENDS_TABLE_NAME o bien BLOCKED_TABLE_NAME.
+	 *
+	 * @param name String con el nombre del eliminado.
+	 * @param table Tabla seleccionada.
+	 * @return true si tiene éxito.
+	 */
+    public boolean removeData(String name, String table){
+		SQLiteDatabase db = this.getWritableDatabase();
+		String[] args = new String[]{name};
+
+		int result = db.delete(table, "name=?", args);
+
+		if (result == -1)
+			return false;
+		else
+			return true;
     }
 
 
+	/**
+	 * Método para obtener un cursor a los datos de la tabla indicada.
+	 *
+	 * @param table Tabla seleccionada.
+	 * @return
+	 */
     public Cursor getData(String table){
         SQLiteDatabase db = this.getWritableDatabase();
         String q = "SELECT * FROM " + table;

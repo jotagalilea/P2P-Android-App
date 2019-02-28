@@ -1,24 +1,16 @@
 package com.example.samue.login;
 
-import android.*;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.app.SearchManager;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -28,17 +20,10 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.ProgressBar;
-import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,19 +34,14 @@ import com.pubnub.api.PubnubException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.MediaStream;
-import org.webrtc.PeerConnection;
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.VideoRendererGui;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.List;
 
 import me.kevingleason.pnwebrtc.PnPeer;
 import me.kevingleason.pnwebrtc.PnRTCClient;
@@ -80,7 +60,7 @@ FriendsAdapter adapter;
 ArrayList<Friends> al_friends;
 ArrayList<Friends> al_blocked_users;
 static DatabaseHelper mDatabaseHelper;
-//BlockedUsersHelper blockedUsersHelper;
+static final int BLOCKED_USERS_REQUEST = 4;
 ArchivesDatabase mArchivesDatabase;
 private String userRecursos;
 
@@ -100,6 +80,7 @@ private String userRecursos;
         this.step = 0; this.total = 0;
         al_blocked_users = new ArrayList<>();
         mDatabaseHelper = new DatabaseHelper(this);
+        loadBlockedUsersList();
         //blockedUsersHelper = new BlockedUsersHelper(this);
         mArchivesDatabase = new ArchivesDatabase(this);
         friends_list = (ListView) findViewById(R.id.friends_list);
@@ -161,7 +142,8 @@ private String userRecursos;
         initPubNub();
     }
 
-    private void publish(final String connectTo, final String connectionType){
+
+	private void publish(final String connectTo, final String connectionType){
         String userCall = connectTo + Constants.STDBY_SUFFIX;
         JSONObject jsonCall = new JSONObject();
         try {
@@ -261,6 +243,16 @@ private String userRecursos;
                     }
                 }
                 break;
+			case 4: //Caso para cuando se vuelve de ver los usuarios bloqueados. Hay que recargar la lista.
+				if(resultCode == Activity.RESULT_OK){
+					al_blocked_users.clear();
+					al_blocked_users = (ArrayList<Friends>) data.getSerializableExtra("arrayBloqueados");
+					// Si se ha bloqueado a un amigo hay que recargar el arrayList y el adapter.
+					//if (data.getBooleanExtra("amigo bloqueado", false)){
+						populateListView();
+					//}
+				}
+				break;
             default:
                 if(!userRecursos.equals("")){
                     cerrarConexion(userRecursos);
@@ -305,14 +297,14 @@ private String userRecursos;
         switch (item.getItemId()) {
 			case R.id.see_blocked_users:
 				Intent BUintent = new Intent(this, BlockedUsersActivity.class);
-				//BUintent.putExtra("DBHelper", mDatabaseHelper);
-				startActivity(BUintent);
+				BUintent.putExtra("amigos", al_friends);
+				startActivityForResult(BUintent, BLOCKED_USERS_REQUEST);
 				return true;
 
             case R.id.see_shared_archives:
                 // User chose the "Settings" item, show the app settings UI...
                 //Toast.makeText(getBaseContext(), "Settings clicked", Toast.LENGTH_LONG).show();
-                ArrayList<String> al = getArchivesList();
+                final ArrayList<String> al = getArchivesList();
                 Intent intent = new Intent(Profile.this, Recursos.class);
                 intent.putExtra("lista", al);
                 intent.putExtra("listener", false);
@@ -328,15 +320,46 @@ private String userRecursos;
 
                 bf.setOnClickListener(new View.OnClickListener() {
                     @Override
-                    public void onClick(View v) {//TODO metodo para comprobar si existe el usuario en la lista de amigos
-                        String fr = name.getText().toString();
-                        if(!listContains(fr)) {
-                            mdialog.dismiss();
+                    public void onClick(View v) {
+                        final String fr = name.getText().toString();
+
+                        /* Si el nuevo amigo estaba bloqueado se elimina el bloqueo antes de enviar
+                         * la petición de amistad.
+                         */
+                        if (listContains(fr, al_blocked_users)){
+                        	final Dialog removeBlockedDialog = new Dialog(Profile.this);
+							removeBlockedDialog.setContentView(R.layout.dialog_remove_blocked_friend);
+							removeBlockedDialog.show();
+
+							TextView title = removeBlockedDialog.findViewById(R.id.previous_blocked_friend_title);
+							title.setText("El usuario está bloqueado y se desbloqueará si continúas.\n¿Continuar?");
+
+							Button yes = removeBlockedDialog.findViewById(R.id.unlock_yes);
+							yes.setOnClickListener(new View.OnClickListener() {
+								@Override
+								public void onClick(View view) {
+									mDatabaseHelper.removeData(fr, mDatabaseHelper.BLOCKED_TABLE_NAME);
+									loadBlockedUsersList();
+									publish(fr, "FR");
+									Toast.makeText(getApplicationContext(), "Friend request sent", Toast.LENGTH_SHORT).show();
+									removeBlockedDialog.dismiss();
+								}
+							});
+							Button no = removeBlockedDialog.findViewById(R.id.unlock_no);
+							no.setOnClickListener(new View.OnClickListener() {
+								@Override
+								public void onClick(View view) {
+									removeBlockedDialog.dismiss();
+								}
+							});
+						}
+                        else if(!listContains(fr, al_friends)) {
                             publish(fr, "FR");
                             Toast.makeText(getApplicationContext(), "Friend request sent", Toast.LENGTH_SHORT).show();
                         }else{
                             Toast.makeText(getApplicationContext(), "you're already friend of " + fr, Toast.LENGTH_SHORT).show();
                         }
+                        mdialog.dismiss();
                     }
                 });
 
@@ -349,14 +372,13 @@ private String userRecursos;
     }
 
 
-    private boolean listContains(String nombre){
-        boolean contains = false;
-        for(Friends f : al_friends){
+    private boolean listContains(String nombre, ArrayList<Friends> al){
+        for(Friends f : al){
             if(f.getNombre().equals(nombre)){
-                contains = true;
+                return true;
             }
         }
-        return contains;
+        return false;
     }
 
     public void addData(String newEntry){ //llamar cuando aceptemos la peticion de amistad y cuando nos la acepten
@@ -611,7 +633,7 @@ private String userRecursos;
         try{
             final String userFR = jsonMsg.getString("sendTo");
             // Si el usuario está bloqueado se desecha la petición silenciosamente.
-            if (!al_blocked_users.contains(userFR)){
+            if (!listContains(userFR, al_blocked_users)){
 				mdialog = new Dialog(Profile.this);
 				mdialog.setContentView(R.layout.dialog_acceptfriend);
 				mdialog.show();
@@ -643,10 +665,6 @@ private String userRecursos;
 					}
 				});
 			}
-			///////////////////////////////////////////////////////////
-			//TODO: Cuando compruebe que funciona, quitar este else:
-			else Toast.makeText(getApplicationContext(), userFR + " ha intentado amistad pero está bloqueado", Toast.LENGTH_SHORT).show();
-			///////////////////////////////////////////////////////////
 
         }catch(Exception e){
             e.printStackTrace();
@@ -786,5 +804,16 @@ private String userRecursos;
         }
     }
 
+	/**
+	 * Carga de los usuarios bloqueados almacenados en la BD.
+	 */
+	private void loadBlockedUsersList() {
+		Cursor c = mDatabaseHelper.getData(DatabaseHelper.BLOCKED_TABLE_NAME);
+		al_blocked_users.clear();
+		while (c.moveToNext()){
+			Friends f = new Friends(c.getString(1), R.drawable.ic_launcher_foreground);
+			al_blocked_users.add(f);
+		}
+	}
 
 }

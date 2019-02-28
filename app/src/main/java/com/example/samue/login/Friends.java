@@ -6,8 +6,6 @@ public class Friends implements Serializable {
     String nombre;
     int img;
 
-    public Friends(){}
-
     public Friends(String nombre, int img) {
         this.nombre = nombre;
         this.img = img;
