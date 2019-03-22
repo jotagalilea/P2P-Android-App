@@ -36,9 +36,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar">
         <activity
+            android:name=".DownloadManagerActivity"
+            android:label="@string/title_activity_download_manager"
+            android:theme="@style/NoActionBar"></activity>
+        <activity
             android:name=".BlockedUsersActivity"
             android:label="@string/title_activity_blocked_users"
-            android:theme="@style/NoActionBar"></activity>
+            android:theme="@style/NoActionBar" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -53,6 +57,10 @@
             android:name=".Recursos"
             android:noHistory="true" />
         <activity android:name=".ArchiveExplorer" />
+        <service
+            android:name=".DownloadService"
+            android:enabled="false"
+            android:exported="false" />
     </application>
 
 </manifest>

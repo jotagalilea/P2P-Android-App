@@ -3,11 +3,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item android:id="@+id/see_shared_archives"
-        android:title="see shared files"
+        android:title="Ver archivos compartidos"
         app:showAsAction="never"/>
 
     <item android:id="@+id/see_blocked_users"
-        android:title="see blocked users"
+        android:title="Ver usuarios bloqueados"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/see_downloads"
+        android:title="Ver descargas"
         app:showAsAction="never"/>
 
     <item android:id="@+id/action_search"

@@ -71,6 +71,8 @@ private String userRecursos;
     private String archivoCompartido;
     private int step, total;
     ProgressDialog pd;
+    private DownloadService downloadService;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -140,6 +142,9 @@ private String userRecursos;
             }
         });
         initPubNub();
+
+        Intent dl_intent = new Intent(this, DownloadService.class);
+        startService(dl_intent);
     }
 
 
@@ -295,6 +300,12 @@ private String userRecursos;
 
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+			case R.id.see_downloads:
+				Intent dmIntent = new Intent(this, DownloadManagerActivity.class);
+				dmIntent.putExtra("downloadService", this.downloadService);
+				startActivity(dmIntent);
+				return true;
+
 			case R.id.see_blocked_users:
 				Intent BUintent = new Intent(this, BlockedUsersActivity.class);
 				BUintent.putExtra("amigos", al_friends);
@@ -590,7 +601,7 @@ private String userRecursos;
     }
 
     private void guardarArchivo(byte[] bFile, String name){
-        String path = Environment.getExternalStorageDirectory().getPath() + "/Download";
+        String path = Environment.getExternalStorageDirectory().getPath() + "/DownloadService";
         File file = new File(path, "P2PArchiveSharing");
 
         if(!file.isDirectory()){
@@ -814,6 +825,13 @@ private String userRecursos;
 			Friends f = new Friends(c.getString(1), R.drawable.ic_launcher_foreground);
 			al_blocked_users.add(f);
 		}
+	}
+
+
+	@Override
+	protected void onDestroy(){
+		downloadService.stop();
+		super.onDestroy();
 	}
 
 }
