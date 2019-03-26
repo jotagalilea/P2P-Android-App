@@ -145,7 +145,9 @@ private String userRecursos;
 
         Intent dl_intent = new Intent(this, DownloadService.class);
         startService(dl_intent);
+        downloadService = DownloadService.getThisService();
     }
+
 
 
 	private void publish(final String connectTo, final String connectionType){
@@ -546,58 +548,8 @@ private String userRecursos;
     }
 
     private void handleSA(JSONObject jsonMsg){
-        try{
-            String aux = "";
-            int size, inicio;
-            size = jsonMsg.getInt("size");
-            this.step = size / 100;
-            inicio = jsonMsg.getInt("inicio");
-            String name = jsonMsg.getString("name");
-            boolean split = jsonMsg.getBoolean("split");
-            boolean lastPiece = jsonMsg.getBoolean("lastPiece");
-            String archive = jsonMsg.getString("archive");
+        this.downloadService.handleMsg(jsonMsg);
 
-            if(split){
-                aux = this.archivoCompartido;
-                this.archivoCompartido = aux + archive;
-                if(!lastPiece){
-                    if(inicio != 0){
-                        if(inicio > this.total){
-                            Profile.this.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    pd.incrementProgressBy(1);
-                                }
-                            });
-                            this.total += this.step;
-                        }
-                    }else{
-                        this.total = this.step;
-                    }
-                }else{
-                    byte[] bFile = Base64.decode(this.archivoCompartido, Base64.URL_SAFE);
-                    Profile.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            pd.dismiss();
-                        }
-                    });
-                    guardarArchivo(bFile, name);
-                }
-            }else{
-                byte[] bFile = Base64.decode(archive, Base64.URL_SAFE);
-                Profile.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        pd.dismiss();
-                    }
-                });
-                guardarArchivo(bFile, name);
-            }
-
-        }catch(Exception e){
-            e.printStackTrace();
-        }
     }
 
     private void guardarArchivo(byte[] bFile, String name){

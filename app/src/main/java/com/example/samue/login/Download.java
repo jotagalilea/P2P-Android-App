@@ -20,6 +20,12 @@ public class Download {
 	}
 
 
+	public void runDownload(){
+
+	}
+
+
+
 	public String getFileName() {
 		return fileName;
 	}
