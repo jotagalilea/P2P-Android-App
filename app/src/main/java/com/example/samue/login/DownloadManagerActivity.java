@@ -1,6 +1,7 @@
 package com.example.samue.login;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
@@ -11,6 +12,10 @@ import android.util.Log;
 import android.widget.ListView;
 
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 /**
@@ -23,9 +28,10 @@ public class DownloadManagerActivity extends AppCompatActivity {
 
 	private ArrayList<Download> al_downloads;
 	private DownloadService downloadService;
-	private boolean serviceBound;
+	private boolean serviceBound = false;
 	private ListView dl_listView;
 	private DownloadListAdapter listAdapter;
+	private Timer timer;
 	private ServiceConnection dl_serviceConnection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -51,26 +57,48 @@ public class DownloadManagerActivity extends AppCompatActivity {
 		setSupportActionBar(toolbar);
 		getSupportActionBar().setTitle("Descargas");
 
-		//TODO: Si se guardan las descargas al cerrar la app, debería obtenerlas aquí para pasarlas al adapter.
-		//TODO: Falta pasar las descargas al intent desde Profile, y mandar el intent.
-		Intent downloads_intent = getIntent();
-		downloadService = (DownloadService) downloads_intent.getSerializableExtra("downloadService");
+		Intent intent = getIntent();
+		Intent serviceIntent = intent.getParcelableExtra("downloadServiceIntent");
+		//TODO: Revisar si estos parámetros son correctos:
+		bindService(serviceIntent, dl_serviceConnection, Context.BIND_AUTO_CREATE);
+
 		al_downloads = downloadService.getDownloads();
 		listAdapter = new DownloadListAdapter(getApplicationContext(), al_downloads);
 		dl_listView = findViewById(R.id.downloads_list);
 		dl_listView.setAdapter(listAdapter);
 
-		bindDownloads();
-
+		timer = new Timer();
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				updateGUI();
+			}
+		}, 0, 1000);
 	}
 
-	/**
-	 * Método que enlaza cada una de las descargas (servicios) con cada uno de sus respectivos
-	 * elementos de la listView.
-	 */
-	private void bindDownloads(){
 
 
+	// Va actualizando las descargas y notificando al adapter.
+	private void updateGUI(){
+		/*Iterator<Download> it = al_downloads.iterator();
+		while (it.hasNext()) {
+			try {
+				Download d = it.next();
+				 //findViewById(R.id.dl_row);
+			}
+			catch (ConcurrentModificationException e) {
+				e.printStackTrace();
+				it = al_downloads.iterator();
+			}
+		}
+		*/
+		this.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				listAdapter.notifyDataSetChanged();
+			}
+		});
 	}
+
 
 }

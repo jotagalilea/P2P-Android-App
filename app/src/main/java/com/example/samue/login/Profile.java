@@ -72,6 +72,7 @@ private String userRecursos;
     private int step, total;
     ProgressDialog pd;
     private DownloadService downloadService;
+    private Intent dl_intent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,9 +144,8 @@ private String userRecursos;
         });
         initPubNub();
 
-        Intent dl_intent = new Intent(this, DownloadService.class);
+        dl_intent = new Intent(this, DownloadService.class);
         startService(dl_intent);
-        downloadService = DownloadService.getThisService();
     }
 
 
@@ -304,7 +304,7 @@ private String userRecursos;
         switch (item.getItemId()) {
 			case R.id.see_downloads:
 				Intent dmIntent = new Intent(this, DownloadManagerActivity.class);
-				dmIntent.putExtra("downloadService", this.downloadService);
+				dmIntent.putExtra("downloadServiceIntent", this.dl_intent);
 				startActivity(dmIntent);
 				return true;
 
@@ -552,33 +552,7 @@ private String userRecursos;
 
     }
 
-    private void guardarArchivo(byte[] bFile, String name){
-        String path = Environment.getExternalStorageDirectory().getPath() + "/DownloadService";
-        File file = new File(path, "P2PArchiveSharing");
 
-        if(!file.isDirectory()){
-            file.mkdirs();
-        }
-
-        path += "/P2PArchiveSharing/" + name;
-
-        try{
-            FileOutputStream fos = new FileOutputStream(path);
-            BufferedOutputStream bos = new BufferedOutputStream(fos);
-
-            bos.write(bFile);
-
-            bos.close();
-            fos.close();
-
-            this.archivoCompartido = "";
-            notificate("Archive " + name + " saved in Downloads");
-
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-
-    }
 
     private void FR(String sendTo){ //Friend Request
         try{
