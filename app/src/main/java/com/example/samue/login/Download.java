@@ -2,6 +2,8 @@ package com.example.samue.login;
 
 /**
  * Created by jotagalilea on 21/03/2019.
+ *
+ * Almacenamiento del estado de una descarga.
  */
 public class Download {
 	private final String fileName;
@@ -63,7 +65,7 @@ public class Download {
 	}
 
 	public void updateSpeed(int bytesPerSecond){
-		String str = new String();
+		String str;
 		if (bytesPerSecond >= MEGA){
 			bytesPerSecond /= MEGA;
 			str = MBPS;

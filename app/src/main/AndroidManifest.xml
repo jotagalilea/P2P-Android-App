@@ -59,7 +59,7 @@
         <activity android:name=".ArchiveExplorer" />
         <service
             android:name=".DownloadService"
-            android:enabled="false"
+            android:directBootAware="true"
             android:exported="false" />
     </application>
 

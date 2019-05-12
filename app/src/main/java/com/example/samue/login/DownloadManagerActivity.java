@@ -28,25 +28,25 @@ public class DownloadManagerActivity extends AppCompatActivity {
 
 	private ArrayList<Download> al_downloads;
 	private DownloadService downloadService;
-	private boolean serviceBound = false;
 	private ListView dl_listView;
 	private DownloadListAdapter listAdapter;
 	private Timer timer;
-	private ServiceConnection dl_serviceConnection = new ServiceConnection() {
+	private boolean serviceBound = false;
+	private ServiceConnection serviceConnection = new ServiceConnection(){
 		@Override
 		public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
 			DownloadService.DownloadBinder binder = (DownloadService.DownloadBinder) iBinder;
 			downloadService = binder.getService();
 			serviceBound = true;
+			prepareActivity();
 		}
 
 		@Override
 		public void onServiceDisconnected(ComponentName componentName) {
-			Log.e("ERROR EN DESCARGA", "SERVICIO DESCONECTADO INESPERADAMENTE");
 			serviceBound = false;
+			Log.e("ERROR EN DESCARGA", "SERVICIO DESCONECTADO INESPERADAMENTE");
 		}
 	};
-
 
 
 	@Override
@@ -59,21 +59,27 @@ public class DownloadManagerActivity extends AppCompatActivity {
 
 		Intent intent = getIntent();
 		Intent serviceIntent = intent.getParcelableExtra("downloadServiceIntent");
-		//TODO: Revisar si estos parámetros son correctos:
-		bindService(serviceIntent, dl_serviceConnection, Context.BIND_AUTO_CREATE);
+		//TODO: ¿Poner pantalla de carga mientras se ata el servicio?
+		boolean bound = bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+		//System.out.print(bound);
+	}
 
-		al_downloads = downloadService.getDownloads();
-		listAdapter = new DownloadListAdapter(getApplicationContext(), al_downloads);
-		dl_listView = findViewById(R.id.downloads_list);
-		dl_listView.setAdapter(listAdapter);
 
-		timer = new Timer();
-		timer.schedule(new TimerTask() {
-			@Override
-			public void run() {
-				updateGUI();
-			}
-		}, 0, 1000);
+	private void prepareActivity(){
+		if (serviceBound) {
+			al_downloads = downloadService.getDownloads();
+			listAdapter = new DownloadListAdapter(getApplicationContext(), al_downloads);
+			dl_listView = findViewById(R.id.downloads_list);
+			dl_listView.setAdapter(listAdapter);
+
+			timer = new Timer();
+			timer.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					updateGUI();
+				}
+			}, 0, 1000);
+		}
 	}
 
 

@@ -18,6 +18,9 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+
 /**
  * Created by jotagalilea on 12/03/2019.
  *
@@ -31,7 +34,8 @@ public class DownloadService extends Service{
 	private final IBinder binder = new DownloadBinder();
 	private DownloadThread thread;
 	private JSONObject jsonMsg;
-	private boolean newMsgReceived = false;
+	private Boolean newMsgReceived = FALSE;
+	private final Object monitor = new Object();
 
 
 
@@ -42,6 +46,7 @@ public class DownloadService extends Service{
 	public void onCreate(){
 		al_downloads = new ArrayList<>();
 		thisService = this;
+		//jsonMsg = new JSONObject();
 		thread = new DownloadThread();
 	}
 
@@ -67,10 +72,10 @@ public class DownloadService extends Service{
 
 
 	public void handleMsg(final JSONObject json){
-		synchronized (jsonMsg){
+		synchronized (monitor){
 			jsonMsg = json;
-			newMsgReceived = true;
-			jsonMsg.notify();
+			newMsgReceived = TRUE;
+			monitor.notify();
 		}
 	}
 
@@ -78,7 +83,7 @@ public class DownloadService extends Service{
 
 	public void addDownload(Download d){
 		al_downloads.add(d);
-		hm_downloads.put(d.getFileName(), d);
+		//hm_downloads.put(d.getFileName(), d);
 	}
 
 
@@ -95,7 +100,7 @@ public class DownloadService extends Service{
 
 	private void notificate(String notification){
 		final String notice = notification;
-		Toast.makeText(getApplicationContext(), notice, Toast.LENGTH_SHORT).show();
+		Toast.makeText(getApplicationContext(), notice, Toast.LENGTH_LONG).show();
 	}
 
 
@@ -105,14 +110,30 @@ public class DownloadService extends Service{
 	/////////////////////////////////// Clases extra ///////////////////////////////////
 
 	private class DownloadThread extends Thread{
-		private int step, storedLastSecond, size, inicio, total, bps, seconds;
-		private String archivoCompartido;
+		private int step, storedLastSecond, size, start, total, bps, seconds;
+		//private String archivoCompartido;
+		// ¡¡OJO!! ESTO NO SOPORTA DESCARGAS SIMULTÁNEAS:
+		private StringBuilder codedData = new StringBuilder();
+		private String name;
+		private boolean nameAcquired = false;
+		private FileOutputStream fos;
+		//private StringBuilder decodedData = new StringBuilder();
+		////////////////////////////////////////////////
 		private Timer timer;
 		private Download dl;
 
 		@Override
 		public void run(){
 			try{
+				// NO VALE PARA DESCARGAS PARALELAS:
+				boolean lastPiece;
+				StringBuilder archive = new StringBuilder();
+				String path = Environment.getExternalStorageDirectory().getPath() + "/DownloadService";
+				File file = new File(path, "P2PArchiveSharing");
+				if(!file.isDirectory())
+					file.mkdirs();
+				path += "/P2PArchiveSharing/";
+
 				timer = new Timer();
 				timer.schedule(new TimerTask() {
 					@Override
@@ -121,47 +142,51 @@ public class DownloadService extends Service{
 					}
 				}, 1000, 1000);
 
+
 				while (true) {
 					// El servicio se pausa si no se recibe el json.
-					synchronized (jsonMsg) {
+					synchronized (monitor) {
 						while (!newMsgReceived)
-							jsonMsg.wait();
-						newMsgReceived = false;
+							monitor.wait();
+						newMsgReceived = FALSE;
 
-						String aux = "";
-						//int size, inicio;
-						size = jsonMsg.getInt("size");
-						this.step = size / 100;
-						inicio = jsonMsg.getInt("inicio");
-						String name = jsonMsg.getString("name");
-						boolean split = jsonMsg.getBoolean("split");
-						boolean lastPiece = jsonMsg.getBoolean("lastPiece");
-						String archive = jsonMsg.getString("archive");
+						if (!nameAcquired) {
+							name = jsonMsg.getString(Utils.NAME);
+							path += name;
+							fos = new FileOutputStream(path);
+							nameAcquired = true;
+						}
+						//int size, start;
+						size = jsonMsg.getInt(Utils.SIZE);
+						step = size / 100;
+						start = jsonMsg.getInt(Utils.START);
+						//boolean split = jsonMsg.getBoolean("split");
+						lastPiece = jsonMsg.getBoolean(Utils.LAST_PIECE);
+						//TODO: Ver si esto es más rápido y consume menos memoria:
+						archive.replace(0, archive.length(), jsonMsg.getString(Utils.ARCHIVE));
 
-						//TODO: COMPROBAR SI AL INICIARSE UNA DESCARGA inicio VALE 0.
-						if (inicio == 0) {
+						if (start == 0) {
 							dl = new Download(name, size);
 							addDownload(dl);
-						} else
+						} /*else
 							//TODO: Quizá no necesito el HashMap...
 							dl = hm_downloads.get(name);
+							*/
 
-						if (split) {
-							aux = this.archivoCompartido;
-							this.archivoCompartido = aux + archive;
-							if (!lastPiece) {
-								if (inicio != 0) {
-									if (inicio > this.total)
-										this.total += this.step;
-								} else
-									this.total = this.step;
-							} else {
-								byte[] bFile = Base64.decode(this.archivoCompartido, Base64.URL_SAFE);
-								guardarArchivo(bFile, name);
-							}
+						codedData.replace(0, codedData.length(), jsonMsg.getString(Utils.ARCHIVE));
+						//decodedData.append(Base64.decode(codedData.toString(), Base64.URL_SAFE));
+						fos.write(Base64.decode(codedData.toString(), Base64.URL_SAFE));
+
+						if (!lastPiece) {
+							//TODO: ¡¡OJO!! Esto NO SOPORTA descargas SIMULTÁNEAS.
+							if (start != 0) {
+								if (start > total)
+									total += step;
+							} else
+								total = step;
 						} else {
-							byte[] bFile = Base64.decode(archive, Base64.URL_SAFE);
-							guardarArchivo(bFile, name);
+							nameAcquired = false;
+							fos.close();
 						}
 					}
 				}
@@ -175,19 +200,24 @@ public class DownloadService extends Service{
 
 		private void updateDownload(Download dl){
 			if (dl != null){
-				byte prog = (byte) ((storedLastSecond/inicio) * 100);
+				byte prog;
+				if (start != 0)
+					prog = (byte) ((storedLastSecond/start) * 100);
+				else
+					prog = 1;
 				dl.updateProgress(prog);
-				bps = inicio - storedLastSecond;
+				bps = start - storedLastSecond;
 				dl.updateSpeed(bps);
 				++seconds;
 				dl.updateETA(seconds);
-				storedLastSecond += inicio;
+				storedLastSecond += start;
 			}
 		}
 
 
 
-		private void guardarArchivo(byte[] bFile, String name){
+		//TODO: El guardado tiene que ser sobre la marcha de la descarga, así no.
+		/*private void guardarArchivo(byte[] bFile, String name){
 			String path = Environment.getExternalStorageDirectory().getPath() + "/DownloadService";
 			File file = new File(path, "P2PArchiveSharing");
 
@@ -207,13 +237,14 @@ public class DownloadService extends Service{
 				fos.close();
 
 				this.archivoCompartido = "";
-				notificate("Archive " + name + " saved in Downloads");
+				notificate("Archive " + name + " saved in DownloadService");
 
 			}catch(Exception e){
 				e.printStackTrace();
 			}
 
 		}
+		*/
 	}
 
 
