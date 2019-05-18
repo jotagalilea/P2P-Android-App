@@ -511,14 +511,16 @@ public class Profile extends AppCompatActivity {
 			msg.put("type", "SA");
 			msg.put(Utils.NAME, archive);
 
-			String s="";
+			String s;
 			int fileLength = (int) file.length();
 
-			// Voy a enviar 4 MB de datos cada vez, codificado aumentará.
-			byte[] bFile = new byte[4096];
-			int bytesRead, start = 0;
+			// Voy a enviar 4 KB de datos en cada mensaje, codificado aumentará.
+			//TODO: Para aumentar la velocidad probar con un tamaño de mensaje mayor:
+			byte[] bFile = new byte[8192];
+			int bytesRead;
 			boolean lastPiece = false;
-			msg.put(Utils.START, start);
+			boolean firstPiece = true;
+			msg.put(Utils.FILE_LENGTH, fileLength);
 
 			while (!lastPiece){
 				bytesRead = fis.read(bFile);
@@ -527,16 +529,16 @@ public class Profile extends AppCompatActivity {
 
 				s = Base64.encodeToString(bFile, Base64.URL_SAFE);
 				msg.put(Utils.ARCHIVE, s);
-				msg.put(Utils.SIZE, s.length());
 
 				this.pnRTCClient.transmit(sendTo, msg);
 
 				msg.remove(Utils.ARCHIVE);
-				msg.remove(Utils.SIZE);
-				msg.remove(Utils.START);
 				msg.remove(Utils.LAST_PIECE);
-				msg.put(Utils.START, start);
-				start += s.length();
+
+				if (firstPiece){
+					msg.remove(Utils.FILE_LENGTH);
+					firstPiece = false;
+				}
 			}
 
 			fis.close();

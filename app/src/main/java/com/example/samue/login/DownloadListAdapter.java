@@ -41,35 +41,14 @@ public class DownloadListAdapter extends ArrayAdapter {
 		// Inicialización de las vistas:
 		Download d = al_downloads.get(i);
 		fileName.setText(d.getFileName());
-		fileSize.setText(d.getSize());
+		fileSize.setText(d.getSizeString());
 		speed.setText(d.getSpeed());
 		eta.setText(d.getEstimatedTime());
 		progress.setMax(100);
-		progress.setProgress(0);
-		//TODO: ¿actualizar IU? ¿más cosas?
+		progress.setProgress(d.getProgress());
 
 		return rowView;
 	}
 
 
-	public void update_dl_status(){
-
-	}
-
-
-	/*@Override
-	public int getCount() {
-		return 0;
-	}
-
-	@Override
-	public Object getItem(int i) {
-		return al_downloads.get(i);
-	}
-
-	@Override
-	public long getItemId(int i) {
-		return 0;
-	}
-	*/
 }

@@ -7,23 +7,28 @@ package com.example.samue.login;
  */
 public class Download {
 	private final String fileName;
-	private final int size;
-	private byte progress;
-	private String speed;
-	private String estimatedTime;
+	private final String sizeString;
+	private final long size;
+	private int progress;
+	private StringBuilder speed;
+	private StringBuilder estimatedTime;
+	private final String B = " B";
+	private final String KB = " KB";
+	private final String MB = " MB";
 	private final String BPS = " B/s";
 	private final String KBPS = " KB/s";
-	private final int KILO = 1024;
 	private final String MBPS = " MB/s";
+	private final int KILO = 1024;
 	private final int MEGA = 1024*1024;
 
 
-	public Download(String name, int size){
+	public Download(String name, long size){
 		this.fileName = name;
 		this.size = size;
+		this.sizeString = getSizeString(size);
 		this.progress = 0;
-		this.speed = "";
-		this.estimatedTime = "";
+		this.speed = new StringBuilder();
+		this.estimatedTime = new StringBuilder();
 	}
 
 
@@ -43,45 +48,72 @@ public class Download {
 		return fileName;
 	}
 
-	public int getSize() {
+	public String getSizeString() {
+		return sizeString;
+	}
+
+	public long getSize() {
 		return size;
 	}
 
-	public byte getProgress() {
+	public int getProgress() {
 		return progress;
 	}
 
 	public String getSpeed() {
-		return speed;
+		return speed.toString();
 	}
 
 	public String getEstimatedTime() {
-		return estimatedTime;
+		return estimatedTime.toString();
 	}
 
-	public void updateProgress(byte p){
+	public void updateProgress(int p){
 		if (p>=0 && p<=100)
 			progress = p;
 	}
 
 	public void updateSpeed(int bytesPerSecond){
-		String str;
 		if (bytesPerSecond >= MEGA){
 			bytesPerSecond /= MEGA;
-			str = MBPS;
+			speed.replace(0, speed.length(), MBPS);
 		}
 		else if (bytesPerSecond >= KILO){
 			bytesPerSecond /= KILO;
-			str = KBPS;
+			speed.replace(0, speed.length(), KBPS);
 		}
 		else{
-			str = BPS;
+			speed.replace(0, speed.length(), BPS);
 		}
-		this.speed = Integer.toString(bytesPerSecond) + str;
+		speed.insert(0, bytesPerSecond);
 	}
 
 
-	public void updateETA(int seconds){
-		this.estimatedTime = String.format("%02d:%02d:%02d", seconds/3600, seconds/60, seconds%60);
+	public void updateETA(int bps){
+		if (bps != 0) {
+			long aproxDataLeft = size - ((size * progress) / 100);
+			int secondsLeft = (int) (aproxDataLeft / bps);
+			estimatedTime.replace(0, estimatedTime.length(),
+					String.format("%02d:%02d:%02d", secondsLeft / 3600, secondsLeft / 60, secondsLeft % 60));
+		}
+	}
+
+
+	private String getSizeString(long s){
+		StringBuilder aux;
+		if (s >= MEGA){
+			s /= MEGA;
+			aux = new StringBuilder(MB);
+		}
+		else if (s >= KILO){
+			s /= KILO;
+			aux = new StringBuilder(KB);
+		}
+		else{
+			aux = new StringBuilder(B);
+		}
+		aux.insert(0, s);
+
+		return aux.toString();
 	}
 }

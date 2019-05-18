@@ -10,7 +10,6 @@ import android.widget.Toast;
 
 import org.json.JSONObject;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
@@ -110,14 +109,15 @@ public class DownloadService extends Service{
 	/////////////////////////////////// Clases extra ///////////////////////////////////
 
 	private class DownloadThread extends Thread{
-		private int step, storedLastSecond, size, start, total, bps, seconds;
+		private int storedLastSecond, bps, bytesWritten;
+		private long fileLength;
 		//private String archivoCompartido;
 		// ¡¡OJO!! ESTO NO SOPORTA DESCARGAS SIMULTÁNEAS:
 		private StringBuilder codedData = new StringBuilder();
 		private String name;
 		private boolean nameAcquired = false;
 		private FileOutputStream fos;
-		//private StringBuilder decodedData = new StringBuilder();
+		private byte[] decodedData;
 		////////////////////////////////////////////////
 		private Timer timer;
 		private Download dl;
@@ -133,6 +133,7 @@ public class DownloadService extends Service{
 				if(!file.isDirectory())
 					file.mkdirs();
 				path += "/P2PArchiveSharing/";
+				bytesWritten = 0;
 
 				timer = new Timer();
 				timer.schedule(new TimerTask() {
@@ -156,17 +157,17 @@ public class DownloadService extends Service{
 							fos = new FileOutputStream(path);
 							nameAcquired = true;
 						}
-						//int size, start;
-						size = jsonMsg.getInt(Utils.SIZE);
-						step = size / 100;
-						start = jsonMsg.getInt(Utils.START);
+						//size = jsonMsg.getInt(Utils.SIZE);
+						//step = size / 100;
+						//start = jsonMsg.getInt(Utils.START);
 						//boolean split = jsonMsg.getBoolean("split");
 						lastPiece = jsonMsg.getBoolean(Utils.LAST_PIECE);
 						//TODO: Ver si esto es más rápido y consume menos memoria:
 						archive.replace(0, archive.length(), jsonMsg.getString(Utils.ARCHIVE));
 
-						if (start == 0) {
-							dl = new Download(name, size);
+						if (bytesWritten == 0) {
+							fileLength = jsonMsg.getLong(Utils.FILE_LENGTH);
+							dl = new Download(name, fileLength);
 							addDownload(dl);
 						} /*else
 							//TODO: Quizá no necesito el HashMap...
@@ -174,17 +175,12 @@ public class DownloadService extends Service{
 							*/
 
 						codedData.replace(0, codedData.length(), jsonMsg.getString(Utils.ARCHIVE));
-						//decodedData.append(Base64.decode(codedData.toString(), Base64.URL_SAFE));
-						fos.write(Base64.decode(codedData.toString(), Base64.URL_SAFE));
+						decodedData = Base64.decode(codedData.toString(), Base64.URL_SAFE);
+						fos.write(decodedData);
+						bytesWritten += decodedData.length;
+						storedLastSecond += decodedData.length;
 
-						if (!lastPiece) {
-							//TODO: ¡¡OJO!! Esto NO SOPORTA descargas SIMULTÁNEAS.
-							if (start != 0) {
-								if (start > total)
-									total += step;
-							} else
-								total = step;
-						} else {
+						if (lastPiece) {
 							nameAcquired = false;
 							fos.close();
 						}
@@ -200,51 +196,14 @@ public class DownloadService extends Service{
 
 		private void updateDownload(Download dl){
 			if (dl != null){
-				byte prog;
-				if (start != 0)
-					prog = (byte) ((storedLastSecond/start) * 100);
-				else
-					prog = 1;
+				int prog = (int) ((bytesWritten * 100L) / dl.getSize());
 				dl.updateProgress(prog);
-				bps = start - storedLastSecond;
+				bps = storedLastSecond;
 				dl.updateSpeed(bps);
-				++seconds;
-				dl.updateETA(seconds);
-				storedLastSecond += start;
+				dl.updateETA(bps);
+				storedLastSecond = 0;
 			}
 		}
-
-
-
-		//TODO: El guardado tiene que ser sobre la marcha de la descarga, así no.
-		/*private void guardarArchivo(byte[] bFile, String name){
-			String path = Environment.getExternalStorageDirectory().getPath() + "/DownloadService";
-			File file = new File(path, "P2PArchiveSharing");
-
-			if(!file.isDirectory()){
-				file.mkdirs();
-			}
-
-			path += "/P2PArchiveSharing/" + name;
-
-			try{
-				FileOutputStream fos = new FileOutputStream(path);
-				BufferedOutputStream bos = new BufferedOutputStream(fos);
-
-				bos.write(bFile);
-
-				bos.close();
-				fos.close();
-
-				this.archivoCompartido = "";
-				notificate("Archive " + name + " saved in DownloadService");
-
-			}catch(Exception e){
-				e.printStackTrace();
-			}
-
-		}
-		*/
 	}
 
 
