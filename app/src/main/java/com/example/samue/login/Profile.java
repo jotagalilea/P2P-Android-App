@@ -348,8 +348,8 @@ public class Profile extends AppCompatActivity {
 				mdialog = new Dialog(Profile.this);
 				mdialog.setContentView(R.layout.dialog_newfriend);
 				mdialog.show();
-				name = (EditText) mdialog.findViewById(R.id.name);
-				bf = (Button) mdialog.findViewById(R.id.button_friend);
+				name = mdialog.findViewById(R.id.name);
+				bf = mdialog.findViewById(R.id.button_friend);
 
 				bf.setOnClickListener(new View.OnClickListener() {
 					@Override
@@ -486,7 +486,7 @@ public class Profile extends AppCompatActivity {
 			JSONObject msg = new JSONObject();
 			msg.put("type", "RA");
 			msg.put("sendTo", this.username);
-			msg.put("name", name);
+			msg.put(Utils.NAME, name);
 
 			this.pnRTCClient.transmit(sendTo, msg);
 		}catch(Exception e){
@@ -496,7 +496,7 @@ public class Profile extends AppCompatActivity {
 
 	private void handleRA(JSONObject jsonMsg){
 		try{
-			String archive = jsonMsg.getString("name");
+			String archive = jsonMsg.getString(Utils.NAME);
 			String sendTo = jsonMsg.getString("sendTo");
 			Cursor c  = this.mArchivesDatabase.getData(archive);
 
@@ -514,13 +514,13 @@ public class Profile extends AppCompatActivity {
 			String s;
 			int fileLength = (int) file.length();
 
-			// Voy a enviar 4 KB de datos en cada mensaje, codificado aumentará.
-			//TODO: Para aumentar la velocidad probar con un tamaño de mensaje mayor:
+			// Voy a enviar 8 KB de datos en cada mensaje, codificado aumentará.
 			byte[] bFile = new byte[8192];
 			int bytesRead;
 			boolean lastPiece = false;
 			boolean firstPiece = true;
 			msg.put(Utils.FILE_LENGTH, fileLength);
+			msg.put(Utils.NEW_DL, true);
 
 			while (!lastPiece){
 				bytesRead = fis.read(bFile);
@@ -528,15 +528,17 @@ public class Profile extends AppCompatActivity {
 				msg.put(Utils.LAST_PIECE, lastPiece);
 
 				s = Base64.encodeToString(bFile, Base64.URL_SAFE);
-				msg.put(Utils.ARCHIVE, s);
+				msg.put(Utils.DATA, s);
 
 				this.pnRTCClient.transmit(sendTo, msg);
 
-				msg.remove(Utils.ARCHIVE);
+				msg.remove(Utils.DATA);
 				msg.remove(Utils.LAST_PIECE);
 
 				if (firstPiece){
 					msg.remove(Utils.FILE_LENGTH);
+					msg.remove(Utils.NEW_DL);
+					msg.put(Utils.NEW_DL, false);
 					firstPiece = false;
 				}
 			}
@@ -552,7 +554,6 @@ public class Profile extends AppCompatActivity {
 
 	private void handleSA(JSONObject jsonMsg){
 		this.downloadService.handleMsg(jsonMsg);
-
 	}
 
 
@@ -580,8 +581,8 @@ public class Profile extends AppCompatActivity {
 				TextView f_name = (TextView) mdialog.findViewById(R.id.accept_friend_tv);
 				f_name.setText("Do you want to accept " + userFR + " as a friend?");
 
-				Button yes = (Button) mdialog.findViewById(R.id.accept_friend_yes);
-				Button no = (Button) mdialog.findViewById(R.id.accept_friend_no);
+				Button yes = mdialog.findViewById(R.id.accept_friend_yes);
+				Button no = mdialog.findViewById(R.id.accept_friend_no);
 
 				no.setOnClickListener(new View.OnClickListener() {
 					@Override

@@ -12,6 +12,7 @@ public class Download {
 	private int progress;
 	private StringBuilder speed;
 	private StringBuilder estimatedTime;
+	private boolean running;
 	private final String B = " B";
 	private final String KB = " KB";
 	private final String MB = " MB";
@@ -29,6 +30,7 @@ public class Download {
 		this.progress = 0;
 		this.speed = new StringBuilder();
 		this.estimatedTime = new StringBuilder();
+		this.running = false;
 	}
 
 
@@ -66,6 +68,20 @@ public class Download {
 
 	public String getEstimatedTime() {
 		return estimatedTime.toString();
+	}
+
+	public boolean isRunning(){
+		return running;
+	}
+
+	public void setRunning(){
+		if (!running)
+			running = true;
+	}
+
+	public void setStopped(){
+		if (running)
+			running = false;
 	}
 
 	public void updateProgress(int p){

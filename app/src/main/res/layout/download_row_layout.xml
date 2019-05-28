@@ -44,12 +44,14 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
+        android:ellipsize="end"
         android:text="@string/download_item_filename"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         app:layout_constraintEnd_toStartOf="@+id/dl_filesize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+        <!-- android:maxLines="1" -->
 
     <TextView
         android:id="@+id/dl_filesize"
@@ -69,7 +71,7 @@
         android:id="@+id/dl_progressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="0dp"
-        android:layout_height="15dp"
+        android:layout_height="13dp"
         android:layout_marginStart="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginTop="13dp"
@@ -78,6 +80,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/dl_speed"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/dl_fileName" />
+        app:layout_constraintTop_toBottomOf="@+id/dl_fileName"
+        app:layout_constraintVertical_bias="1.0" />
 
 </android.support.constraint.ConstraintLayout>

@@ -59,7 +59,6 @@ public class DownloadManagerActivity extends AppCompatActivity {
 
 		Intent intent = getIntent();
 		Intent serviceIntent = intent.getParcelableExtra("downloadServiceIntent");
-		//TODO: ¿Poner pantalla de carga mientras se ata el servicio?
 		boolean bound = bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 		//System.out.print(bound);
 	}
@@ -86,18 +85,6 @@ public class DownloadManagerActivity extends AppCompatActivity {
 
 	// Va actualizando las descargas y notificando al adapter.
 	private void updateGUI(){
-		/*Iterator<Download> it = al_downloads.iterator();
-		while (it.hasNext()) {
-			try {
-				Download d = it.next();
-				 //findViewById(R.id.dl_row);
-			}
-			catch (ConcurrentModificationException e) {
-				e.printStackTrace();
-				it = al_downloads.iterator();
-			}
-		}
-		*/
 		this.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {

@@ -5,7 +5,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -29,14 +28,14 @@ public class DownloadListAdapter extends ArrayAdapter {
 
 	@Override
 	public View getView(int i, View view, ViewGroup viewGroup) {
-		//TODO: REPASAR ESTE MÉTODO POR COMPLETO.
 		LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		View rowView = inflater.inflate(R.layout.download_row_layout, viewGroup, false);
-		TextView fileName = rowView.findViewById(R.id.dl_fileName);
-		TextView fileSize = rowView.findViewById(R.id.dl_filesize);
-		ProgressBar progress = rowView.findViewById(R.id.dl_progressBar);
-		TextView speed = rowView.findViewById(R.id.dl_speed);
-		TextView eta = rowView.findViewById(R.id.dl_eta);
+		view = inflater.inflate(R.layout.download_row_layout, viewGroup, false);
+		TextView fileName = view.findViewById(R.id.dl_fileName);
+		fileName.setSingleLine(true);
+		TextView fileSize = view.findViewById(R.id.dl_filesize);
+		ProgressBar progress = view.findViewById(R.id.dl_progressBar);
+		TextView speed = view.findViewById(R.id.dl_speed);
+		TextView eta = view.findViewById(R.id.dl_eta);
 
 		// Inicialización de las vistas:
 		Download d = al_downloads.get(i);
@@ -47,7 +46,7 @@ public class DownloadListAdapter extends ArrayAdapter {
 		progress.setMax(100);
 		progress.setProgress(d.getProgress());
 
-		return rowView;
+		return view;
 	}
 
 

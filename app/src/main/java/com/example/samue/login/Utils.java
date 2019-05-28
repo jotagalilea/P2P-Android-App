@@ -6,8 +6,9 @@ package com.example.samue.login;
  */
 public class Utils {
 
+	public static final String NEW_DL = "newDownload";
 	public static final String NAME = "name";
-	public static final String ARCHIVE = "archive";
+	public static final String DATA = "data";
 	public static final String FILE_LENGTH = "fileLength";
 	public static final String LAST_PIECE = "lastPiece";
 
