@@ -9,6 +9,7 @@ import android.support.v4.util.Pair;
 import android.util.Base64;
 import android.widget.Toast;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -36,6 +37,7 @@ public class DownloadService extends Service{
 	private byte threadsRunning;
 	private final byte MAX_DL_THREADS = 2;
 	// HashMap con clave nombre del fichero y valor el par monitor del hilo y el hilo.
+	// Útil para el paso de los JSON entrantes al hilo que corresponda y controlar qué descargas están activas.
 	private HashMap<String, Pair<Object, ManagerThread.DownloadThread>> hm_downloads;
 
 
@@ -75,7 +77,6 @@ public class DownloadService extends Service{
 
 	public void addDownload(Download d){
 		al_downloads.add(d);
-		//hm_downloads.put(d.getFileName(), d);
 	}
 
 
@@ -109,16 +110,41 @@ public class DownloadService extends Service{
 		private String name;
 		private boolean newDownload = false;
 		private Download dl;
+		private Timer timer;
 
 
 		@Override
 		public void run(){
 			try{
+				timer = new Timer();
+				timer.schedule(new TimerTask() {
+					@Override
+					public void run() {
+						//TODO: Probar esto para cuando llega una tercera descarga y termina una activa.
+						//TODO: Quizá sea mejor hacerlo con un avisador para cuando termine la activa.
+						if ((threadsRunning<MAX_DL_THREADS) && (al_downloads.size()>1)){
+							boolean dl_found = false;
+							Download d = null;
+							Iterator<Download> it = al_downloads.iterator();
+							while (it.hasNext() && !dl_found){
+								d = it.next();
+								dl_found = !d.isRunning();
+							}
+							// Si se encuentra se lanza.
+							if (dl_found) {
+								dl = d;
+								startDownload();
+							}
+						}
+					}
+				}, 10010, 10010);
+
 				while (true) {
 					// El servicio se pausa si no se recibe el json.
 					synchronized (serviceMonitor) {
 						while (!newMsgReceived)
 							serviceMonitor.wait();
+						//TODO: Revisar este comentario:
 						/*
 						 * Pasos:
 						 * 1. Recibir primer mensaje con NEW_DL solo con el nombre del fichero y el tamaño.
@@ -137,43 +163,27 @@ public class DownloadService extends Service{
 
 						// Si es una descarga nueva se añade al ArrayList.
 						if (newDownload) {
+							String friendName = jsonMsg.getString(Utils.FRIEND_NAME);
 							fileLength = jsonMsg.getLong(Utils.FILE_LENGTH);
-							dl = new Download(name, fileLength);
+							dl = new Download(name, fileLength, friendName);
 							addDownload(dl);
 						}
 
 						// Si hay hilos disponibles...
 						if (threadsRunning < MAX_DL_THREADS){
+							// Si es nueva descarga se lanza.
 							if (newDownload)
 								startDownload();
 
-							// Si no es nueva descarga el json es de una descarga activa y hay que ver de cuál es y notificar a su monitor.
-							else{
-								//Creo que falta comprobar el monitor.
-								boolean dl_found = false;
-								Iterator<Download> it = al_downloads.iterator();
-								while (it.hasNext() && !dl_found){
-									dl = it.next();
-									dl_found = !dl.isRunning();
-								}
-								// Si se encuentra se lanza.
-								if (dl_found)
-									startDownload();
-							}
+							// Si no es nueva descarga el json es de la única descarga activa y hay que notificar a su monitor.
+							else
+								notifyAndSetJson();
 						}
-						// Si no, se trata de un json para alguna de las descargas activas y hay que pasárselo y notificárselo.
-						else{
-							Pair<Object, DownloadThread> dl_pair = hm_downloads.get(dl.getFileName());
-							Object dl_monitor = dl_pair.first;
-							DownloadThread th = dl_pair.second;
+						// Si no hay hilos disponibles, entonces se trata seguro de un json para alguna de
+						// las descargas activas y hay que pasárselo y notificárselo.
+						else
+							notifyAndSetJson();
 
-							synchronized (dl_monitor){
-								dl_monitor.notify();
-								//Puede que meter el json en el hilo así no sea necesario.
-								//Quizá sea útil th.isInterrupted() o th.isAlive().
-								th.setJSON(jsonMsg);
-							}
-						}
 
 						newDownload = false;
 						newMsgReceived = false;
@@ -186,15 +196,46 @@ public class DownloadService extends Service{
 		}
 
 
+		/**
+		 * Método que notifica a una descarga que han llegado datos para ella. Para ello se obtiene
+		 * el monitor del hilo y el hilo con ayuda del hashMap hm_downloads donde están almacenados
+		 * y se le pasa el json. Por último se llama a notify() para que continúe.
+		 */
+		private void notifyAndSetJson(){
+			Pair<Object, DownloadThread> dl_pair = hm_downloads.get(name);
+			Object dl_monitor = dl_pair.first;
+			DownloadThread th = dl_pair.second;
+
+			synchronized (dl_monitor) {
+				//Puede que meter el json así en el hilo no sea necesario.
+				th.setJSON(jsonMsg);
+				dl_monitor.notify();
+			}
+		}
+
+
 		private void startDownload(){
 			Object monitor = new Object();
 			dl.setRunning();
 			DownloadThread dl_th = new DownloadThread(monitor, dl);
+			dl_th.setJSON(jsonMsg);
 			Pair<Object, DownloadThread> pair = new Pair<>(monitor, dl_th);
 			hm_downloads.put(dl.getFileName(), pair);
 			++threadsRunning;
 			dl_th.start();
 			// TODO: Falta avisar aquí al amigo para que comience la transferencia.
+			// Quizá no hace falta y ese trabajo ya lo hace pubnub.
+			/*try{
+				JSONObject signal = new JSONObject();
+				signal.put(Utils.BEGIN, true);
+				Profile.pnRTCClient.transmit(dl.getFriend(), signal);
+			}
+			catch (JSONException e){
+				dl_th.interrupt();
+				--threadsRunning;
+				hm_downloads.remove(dl.getFileName());
+				dl.setStopped();
+			}*/
 		}
 
 
@@ -204,46 +245,46 @@ public class DownloadService extends Service{
 		 */
 		private class DownloadThread extends Thread{
 			private JSONObject json;
-			private Timer timer;
+			private Timer dl_timer;
 			private int storedLastSecond, bps, bytesWritten;
 			private StringBuilder codedData = new StringBuilder();
 			private byte[] decodedData;
 			private FileOutputStream fos;
 			private Download dl;
 			private final Object dl_monitor;
-			private boolean lastPiece;
+			private boolean lastPiece, newJson;
 
 
 			public DownloadThread(Object m, Download d){
 				dl_monitor = m;
 				dl = d;
 				lastPiece = false;
+				newJson = true;
 			}
 
 			@Override
 			public void run(){
 				try{
-					String path = Environment.getExternalStorageDirectory().getPath();
-					File file = new File(path, "P2PArchiveSharing");
+					String path = Environment.getExternalStorageDirectory().getPath() + "/P2PArchiveSharing/";
+					File file = new File(path);
 					if(!file.isDirectory())
 						file.mkdirs();
 					name = jsonMsg.getString(Utils.NAME);
+					path += name;
 					fos = new FileOutputStream(path);
-
 					bytesWritten = 0;
 
-					//
-					timer = new Timer();
-					timer.schedule(new TimerTask() {
+					dl_timer = new Timer();
+					dl_timer.schedule(new TimerTask() {
 						@Override
 						public void run() {
-							updateDownload(dl);
+							updateDownload();
 						}
 					}, 1000, 1000);
 
 					while (!lastPiece){
 						synchronized (dl_monitor){
-							while (!newMsgReceived)
+							while (!newJson)
 								dl_monitor.wait();
 
 							codedData.replace(0, codedData.length(), json.getString(Utils.DATA));
@@ -255,20 +296,23 @@ public class DownloadService extends Service{
 							lastPiece = json.getBoolean(Utils.LAST_PIECE);
 							if (lastPiece) {
 								fos.close();
-								timer.cancel();
+								dl_timer.cancel();
 								hm_downloads.remove(dl.getFileName());
 								--threadsRunning;
 							}
+							newJson = false;
 						}
 					}
-
 				} catch(Exception e){
 					e.printStackTrace();
 				}
 			}
 
 
-			private void updateDownload(Download dl){
+			/**
+			 * Actualiza los atributos de la descarga en este hilo en cada llamada.
+			 */
+			private void updateDownload(){
 				if (dl != null){
 					int prog = (int) ((bytesWritten * 100L) / dl.getSize());
 					dl.updateProgress(prog);
@@ -280,8 +324,13 @@ public class DownloadService extends Service{
 			}
 
 
+			/**
+			 * Actualiza el mensaje JSON y señaliza que lo ha recibido.
+			 * @param j
+			 */
 			public void setJSON(JSONObject j){
 				json = j;
+				newJson = true;
 			}
 		}
 	}

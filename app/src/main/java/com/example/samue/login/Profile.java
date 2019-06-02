@@ -68,7 +68,7 @@ public class Profile extends AppCompatActivity {
 	private String userRecursos;
 
 	public static final String LOCAL_MEDIA_STREAM_ID = "localStreamPN";
-	private PnRTCClient pnRTCClient;
+	static PnRTCClient pnRTCClient;
 	private Pubnub mPubNub;
 	public String username;
 	private String archivoCompartido;
@@ -245,21 +245,6 @@ public class Profile extends AppCompatActivity {
 					final String name = data.getStringExtra("name");
 					String sendTo = data.getStringExtra("sendTo");
 					RA(name, sendTo);
-
-                    /*Profile.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            pd = new ProgressDialog(Profile.this);
-                            pd.setMax(100);
-                            pd.setTitle("Downloading " + name + "...");
-                            pd.setMessage("wait for the download to complete");
-                            pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                            pd.setCancelable(false);
-                            pd.setProgress(0);
-                            pd.show();
-                        }
-                    });
-                    */
 				}
 				break;
 			case 3:
@@ -275,9 +260,7 @@ public class Profile extends AppCompatActivity {
 					al_blocked_users.clear();
 					al_blocked_users = (ArrayList<Friends>) data.getSerializableExtra("arrayBloqueados");
 					// Si se ha bloqueado a un amigo hay que recargar el arrayList y el adapter.
-					//if (data.getBooleanExtra("amigo bloqueado", false)){
 					populateListView();
-					//}
 				}
 				break;
 			default:
@@ -508,6 +491,7 @@ public class Profile extends AppCompatActivity {
 			//BufferedInputStream bis = new BufferedInputStream(fis);
 
 			JSONObject msg = new JSONObject();
+			msg.put(Utils.FRIEND_NAME, this.username);
 			msg.put("type", "SA");
 			msg.put(Utils.NAME, archive);
 
@@ -515,13 +499,24 @@ public class Profile extends AppCompatActivity {
 			int fileLength = (int) file.length();
 
 			// Voy a enviar 8 KB de datos en cada mensaje, codificado aumentará.
-			byte[] bFile = new byte[8192];
-			int bytesRead;
 			boolean lastPiece = false;
 			boolean firstPiece = true;
 			msg.put(Utils.FILE_LENGTH, fileLength);
 			msg.put(Utils.NEW_DL, true);
 
+			//TODO: Falta probar descargas simultáneas y lo siguiente si no funciona:
+			/*
+			 * Antes de comenzar el bucle habría que mandar al amigo el mensaje de nueva descarga
+			 * con los datos necesarios y hasta que no reciba respuesta no entra en el while.
+			 * Si este dispositivo ya está enviando un archivo (hilo de envío ocupado) entonces hay que
+			 * decirle al amigo que no puede descargar el archivo de aquí. Entonces el amigo debe intentar
+			 * otra descarga que tenga en espera.
+			 */
+			//pnRTCClient.transmit(sendTo, msg);
+
+			//TODO: Lo que sigue debería estar a la espera de que el amigo dé la señal en un hilo nuevo.
+			byte[] bFile = new byte[8192];
+			int bytesRead;
 			while (!lastPiece){
 				bytesRead = fis.read(bFile);
 				lastPiece = (bytesRead < bFile.length);
@@ -700,7 +695,7 @@ public class Profile extends AppCompatActivity {
 		}
 
 		public void onConnected(String userId){
-			Log.d("Md-a", "connectado a: " + userId);
+			Log.d("Md-a", "conectado a: " + userId);
 		}
 
 		@Override

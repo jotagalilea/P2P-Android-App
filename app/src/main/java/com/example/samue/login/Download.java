@@ -6,6 +6,7 @@ package com.example.samue.login;
  * Almacenamiento del estado de una descarga.
  */
 public class Download {
+	private final String friend;
 	private final String fileName;
 	private final String sizeString;
 	private final long size;
@@ -23,7 +24,8 @@ public class Download {
 	private final int MEGA = 1024*1024;
 
 
-	public Download(String name, long size){
+	public Download(String name, long size, String f){
+		this.friend = f;
 		this.fileName = name;
 		this.size = size;
 		this.sizeString = getSizeString(size);
@@ -45,6 +47,10 @@ public class Download {
 	}
 
 
+
+	public String getFriend(){
+		return friend;
+	}
 
 	public String getFileName() {
 		return fileName;
