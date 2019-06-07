@@ -20,8 +20,8 @@ public class Download {
 	private final String BPS = " B/s";
 	private final String KBPS = " KB/s";
 	private final String MBPS = " MB/s";
-	private final int KILO = 1024;
-	private final int MEGA = 1024*1024;
+	private int KILO = 1024;
+	private int MEGA = 1024*1024;
 
 
 	public Download(String name, long size, String f){
@@ -96,18 +96,19 @@ public class Download {
 	}
 
 	public void updateSpeed(int bytesPerSecond){
+		float f = 0F;
 		if (bytesPerSecond >= MEGA){
-			bytesPerSecond /= MEGA;
+			f = (float) bytesPerSecond / MEGA;
 			speed.replace(0, speed.length(), MBPS);
 		}
 		else if (bytesPerSecond >= KILO){
-			bytesPerSecond /= KILO;
+			f = (float) bytesPerSecond / KILO;
 			speed.replace(0, speed.length(), KBPS);
 		}
 		else{
 			speed.replace(0, speed.length(), BPS);
 		}
-		speed.insert(0, bytesPerSecond);
+		speed.insert(0, String.format("%.1f", f));
 	}
 
 

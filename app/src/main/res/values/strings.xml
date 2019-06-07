@@ -1,10 +1,14 @@
 <resources>
     <string name="app_name">P2P Sharing</string>
-    <string name="title_activity_login_successful">LoginSuccessful</string>
-    <string name="title_activity_blocked_users">BlockedUsersActivity</string>
-    <string name="title_activity_download_manager">DownloadManagerActivity</string>
+    <string name="button_yes">Sí</string>
+    <string name="button_no">No</string>
+    <string name="title_activity_login_successful">Logueado</string>
+    <string name="title_activity_blocked_users">Usuarios bloqueados</string>
+    <string name="title_activity_download_manager">Administrador de descargas</string>
     <string name="download_item_filename">Download_item.file</string>
     <string name="download_item_size">52.50 MB</string>
     <string name="download_item_speed">250 KB/s</string>
     <string name="download_item_eta">2h 20min 5s</string>
+    <string name="share_folder_title">Compartir carpeta</string>
+    <string name="share_folder_question">¿Quieres compartir la carpeta actual?\nNo se compartirán las carpetas anidadas</string>
 </resources>

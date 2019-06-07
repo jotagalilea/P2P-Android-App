@@ -1,25 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.samue.login.ArchiveExplorer"
     android:background="@drawable/background"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:context="com.example.samue.login.ArchiveExplorer">
 
     <TextView
+        android:id="@+id/rutaActual"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/colorPrimaryDark"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+        android:text="Estas en: "
+        android:textSize="20sp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_folder_share"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/rutaActual"
-        android:text="Estas en: "
-        android:textSize="20sp"/>
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginBottom="15dp"
+        android:foregroundGravity="bottom"
+        android:src="@android:drawable/sym_contact_card"
+        app:backgroundTint="@android:color/holo_blue_light"
+        app:fabSize="normal" />
 
     <ListView
+        android:id="@+id/lista_items"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/lista_items">
+        android:layout_height="match_parent"></ListView>
 
-    </ListView>
 
-</LinearLayout>
+</RelativeLayout>

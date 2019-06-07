@@ -6,9 +6,10 @@ package com.example.samue.login;
  */
 public class Utils {
 
-	// TODO: Poner aquí los string que faltan.
+	// TODO: Poner aquí las constantes que se vayan añadiendo.
 	public static final String NEW_DL = "newDownload";
 	public static final String NAME = "name";
+	public static final String PATH = "path";
 	public static final String FRIEND_NAME = "friendName";
 	public static final String BEGIN = "begin";
 	public static final String DATA = "data";

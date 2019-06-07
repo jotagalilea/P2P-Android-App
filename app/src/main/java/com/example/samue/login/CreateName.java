@@ -28,10 +28,10 @@ public class CreateName extends AppCompatActivity {
         setContentView(R.layout.dialog_name);
 
 
-        confirmName = (Button) findViewById(R.id.button_confirm_name);
+        confirmName = findViewById(R.id.button_confirm_name);
 
 
-        name = (EditText) findViewById(R.id.name);
+        name = findViewById(R.id.name);
 
 
 

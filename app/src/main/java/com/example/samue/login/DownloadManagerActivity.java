@@ -12,8 +12,6 @@ import android.util.Log;
 import android.widget.ListView;
 
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 

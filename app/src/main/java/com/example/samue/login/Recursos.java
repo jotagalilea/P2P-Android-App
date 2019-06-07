@@ -1,7 +1,6 @@
 package com.example.samue.login;
 
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
@@ -12,7 +11,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 
 import java.util.ArrayList;
@@ -28,9 +26,9 @@ public class Recursos extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recursos);
         Bundle extras = getIntent().getExtras();
-        shared = (ListView) findViewById(R.id.shared);
+        shared = findViewById(R.id.shared);
 
-        listaNombresArchivos = extras.getParcelableArrayList("lista"); //TODO poner los listeners para la lista
+        listaNombresArchivos = extras.getParcelableArrayList("lista");
 
         boolean listener = extras.getBoolean("listener");
         final String sendTo = extras.getString("sendTo");
@@ -46,11 +44,11 @@ public class Recursos extends AppCompatActivity {
                     mdialog.setContentView(R.layout.dialog_confirmsharedarchive);
                     mdialog.show();
 
-                    TextView tv = (TextView) mdialog.findViewById(R.id.confirm_archive_tv);
+                    TextView tv = mdialog.findViewById(R.id.confirm_archive_tv);
                     tv.setText("Do you want to download " + name + "?");
 
-                    Button yes = (Button) mdialog.findViewById(R.id.confirm_archive_yes);
-                    Button no = (Button) mdialog.findViewById(R.id.confirm_archive_no);
+                    Button yes = mdialog.findViewById(R.id.confirm_archive_yes);
+                    Button no = mdialog.findViewById(R.id.confirm_archive_no);
 
                     no.setOnClickListener(new View.OnClickListener() {
                         @Override

@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.os.Environment;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -40,11 +39,10 @@ import org.webrtc.MediaStream;
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.VideoRendererGui;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import me.kevingleason.pnwebrtc.PnPeer;
 import me.kevingleason.pnwebrtc.PnRTCClient;
@@ -229,14 +227,32 @@ public class Profile extends AppCompatActivity {
 		switch(requestCode){
 			case 1:
 				if(resultCode == Activity.RESULT_OK){
-					String name = data.getStringExtra("name");
-					String path = data.getStringExtra("path");
+					int filesAlreadyShared = 0;
+					int folder_share = data.getIntExtra("folder_sharing", -1);
+					if (folder_share > -1){
+						HashMap<Integer, MyPair> files = (HashMap<Integer,MyPair>) data.getSerializableExtra("files");
+						for (int i=0; i<folder_share; i++){
+							MyPair fileInfo = files.get(i);
+							if (!mArchivesDatabase.exists(fileInfo.getFirst()))
+								mArchivesDatabase.addData(fileInfo.getFirst(), fileInfo.getSecond());
+							else
+								++filesAlreadyShared;
+							if (filesAlreadyShared > 0)
+								notificate(filesAlreadyShared + " archivos ya estaban compartidos");
+							else
+								notificate("Se ha compartido la carpeta");
+						}
+					}
+					else {
+						String name = data.getStringExtra("name");
+						String path = data.getStringExtra("path");
 
-					if(!this.mArchivesDatabase.exists(name)){
-						this.mArchivesDatabase.addData(name, path);
-						notificate("Archive is now shared");
-					}else{
-						notificate("Archive is already shared");
+						if (!this.mArchivesDatabase.exists(name)) {
+							this.mArchivesDatabase.addData(name, path);
+							notificate("Se ha compartido el archivo");
+						} else {
+							notificate("El archivo ya estaba compartido");
+						}
 					}
 				}
 				break;
@@ -504,7 +520,7 @@ public class Profile extends AppCompatActivity {
 			msg.put(Utils.FILE_LENGTH, fileLength);
 			msg.put(Utils.NEW_DL, true);
 
-			//TODO: Falta probar descargas simultáneas y lo siguiente si no funciona:
+			//TODO: Revisar:
 			/*
 			 * Antes de comenzar el bucle habría que mandar al amigo el mensaje de nueva descarga
 			 * con los datos necesarios y hasta que no reciba respuesta no entra en el while.

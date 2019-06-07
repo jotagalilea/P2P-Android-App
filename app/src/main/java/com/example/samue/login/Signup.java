@@ -14,8 +14,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
-
 import java.io.File;
 import java.io.OutputStreamWriter;
 
@@ -31,17 +29,17 @@ public class Signup extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
 
-        l1 = (LinearLayout) findViewById(R.id.l1);
-        l2 = (LinearLayout) findViewById(R.id.l2);
-        cabutton = (Button) findViewById(R.id.cabutton);
-        login = (TextView) findViewById(R.id.login);
+        l1 = findViewById(R.id.l1);
+        l2 = findViewById(R.id.l2);
+        cabutton = findViewById(R.id.cabutton);
+        login = findViewById(R.id.login);
         uptodown = AnimationUtils.loadAnimation(this, R.anim.uptodown);
         l1.setAnimation(uptodown);
         downtoup = AnimationUtils.loadAnimation(this, R.anim.downtoup);
         l2.setAnimation(downtoup);
-        user = (EditText) findViewById(R.id.user);
-        pass = (EditText) findViewById(R.id.pass);
-        confirmpass = (EditText) findViewById(R.id.confirmpass);
+        user = findViewById(R.id.user);
+        pass = findViewById(R.id.pass);
+        confirmpass = findViewById(R.id.confirmpass);
 
         cabutton.setOnClickListener(new View.OnClickListener() {
             @Override

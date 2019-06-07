@@ -197,10 +197,6 @@ public class BlockedUsersActivity extends AppCompatActivity {
 	 */
 	private void loadBlockedUsers(){
 		Cursor c = helper.getData(helper.BLOCKED_TABLE_NAME);
-		/*
-		 * Lo suyo sería renombrar la clase Friends por User y añadirle un booleano que sirva
-		 * para identificar si el objeto es un amigo o un usuario bloqueado.
-		 */
 		al_blocked_users.clear();
 
 		while(c.moveToNext())
