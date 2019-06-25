@@ -14,10 +14,16 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@color/colorPrimaryDark"
         android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
         android:text="Estas en: "
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+    <ListView
+        android:id="@+id/lista_items"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/rutaActual"></ListView>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_folder_share"
@@ -33,11 +39,6 @@
         android:src="@android:drawable/sym_contact_card"
         app:backgroundTint="@android:color/holo_blue_light"
         app:fabSize="normal" />
-
-    <ListView
-        android:id="@+id/lista_items"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"></ListView>
 
 
 </RelativeLayout>

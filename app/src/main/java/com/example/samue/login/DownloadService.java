@@ -1,12 +1,15 @@
 package com.example.samue.login;
 
 import android.app.Service;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Environment;
 import android.os.IBinder;
 import android.support.v4.util.Pair;
 import android.util.Base64;
+import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -271,6 +274,7 @@ public class DownloadService extends Service{
 					name = jsonMsg.getString(Utils.NAME);
 					path += name;
 					fos = new FileOutputStream(path);
+					file = new File(path);
 					bytesWritten = 0;
 
 					dl_timer = new Timer();
@@ -302,6 +306,23 @@ public class DownloadService extends Service{
 							newJson = false;
 						}
 					}
+					// Si se pidió una previsualización se abre el archivo:
+					boolean isPreview = jsonMsg.getBoolean(Utils.PREVIEW_SENT);
+					if (isPreview){
+						MimeTypeMap myMime = MimeTypeMap.getSingleton();
+						Intent newIntent = new Intent(Intent.ACTION_VIEW);
+						String mimeType = myMime.getMimeTypeFromExtension(name.substring(name.lastIndexOf('.')+1));
+						newIntent.setDataAndType(Uri.fromFile(file), mimeType);
+						newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+						try {
+							getApplicationContext().startActivity(newIntent);
+						} catch (ActivityNotFoundException e) {
+							//TODO: Cambiar mensaje.
+							Toast.makeText(getApplicationContext(), "No handler for this type of file.", Toast.LENGTH_LONG).show();
+						}
+					}
+					String completed = "Descargado " + name;
+					Toast.makeText(getApplicationContext(), completed, Toast.LENGTH_LONG).show();
 				} catch(Exception e){
 					e.printStackTrace();
 				}

@@ -24,7 +24,7 @@ import java.util.List;
 
 public class ArchiveExplorer extends AppCompatActivity {
 	private Dialog mdialog;
-	private List listaNombresArchivos;
+	private ArrayList listaNombresArchivos;
 	private List listaRutasArchivos;
 	private ArrayAdapter adaptador;
 	private String directorioRaiz;
@@ -187,7 +187,7 @@ public class ArchiveExplorer extends AppCompatActivity {
 		Collections.sort(listaRutasArchivos, String.CASE_INSENSITIVE_ORDER);
 
 
-		// Recorredos la lista de archivos ordenada para crear la lista de los nombres
+		// Recorremos la lista de archivos ordenada para crear la lista de los nombres
 		// de los archivos que mostraremos en el listView
 		for (int i = x; i < listaRutasArchivos.size(); i++){
 			File archivo = new File((String)listaRutasArchivos.get(i));
@@ -207,7 +207,7 @@ public class ArchiveExplorer extends AppCompatActivity {
 
 		// Creamos el adaptador y le asignamos la lista de los nombres de los
 		// archivos y el layout para los elementos de la lista
-		adaptador = new ArrayAdapter(this, android.R.layout.simple_list_item_1, listaNombresArchivos);
+		adaptador = new AEArrayAdapter(this, android.R.layout.simple_list_item_1, listaNombresArchivos);
 		listaItems.setAdapter(adaptador);
 	}
 }

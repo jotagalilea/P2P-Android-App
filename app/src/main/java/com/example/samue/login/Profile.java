@@ -260,7 +260,8 @@ public class Profile extends AppCompatActivity {
 				if(resultCode == Activity.RESULT_OK){
 					final String name = data.getStringExtra("name");
 					String sendTo = data.getStringExtra("sendTo");
-					RA(name, sendTo);
+					boolean isPreview = data.getBooleanExtra(Utils.REQ_PREVIEW, false);
+					RA(name, sendTo, isPreview);
 				}
 				break;
 			case 3:
@@ -480,12 +481,13 @@ public class Profile extends AppCompatActivity {
 		this.pnRTCClient.closeConnection(userTo);
 	}
 
-	private void RA(String name, String sendTo){ //Request Archive
+	private void RA(String name, String sendTo, boolean isPreview){ //Request Archive
 		try{
 			JSONObject msg = new JSONObject();
 			msg.put("type", "RA");
 			msg.put("sendTo", this.username);
 			msg.put(Utils.NAME, name);
+			msg.put(Utils.REQ_PREVIEW, isPreview);
 
 			this.pnRTCClient.transmit(sendTo, msg);
 		}catch(Exception e){
@@ -520,6 +522,29 @@ public class Profile extends AppCompatActivity {
 			msg.put(Utils.FILE_LENGTH, fileLength);
 			msg.put(Utils.NEW_DL, true);
 
+
+			int maxPreviewSize = 0;
+			boolean isPreview = false;
+			//try{
+				isPreview = jsonMsg.getBoolean(Utils.REQ_PREVIEW);
+				if (isPreview) {
+					// La cantidad de datos que se van a enviar dependerá del tipo de archivo:
+					String extension = archive.substring(archive.lastIndexOf('.') + 1).toLowerCase();
+					//TODO: Falta enviar la preview de un vídeo y de una imagen.
+					/*boolean isVideo = (extension.equalsIgnoreCase("mp4") || extension.equalsIgnoreCase("avi"));
+					if (isVideo){
+						sendThumbnail();
+					}*/
+					maxPreviewSize = setMaxPreviewSize(extension);
+					msg.put(Utils.PREVIEW_SENT, true);
+				}
+				else msg.put(Utils.PREVIEW_SENT, false);
+				//TODO: falta hacer que el preview que se manda se pueda abrir en el remoto, a lo mejor esto no hace falta y vale con mandar el archivo cortado tal cual.
+
+			//} catch (JSONException e){
+				// Si no es una previsualización entonces es una descarga completa y no se hace nada.
+			//}
+
 			//TODO: Revisar:
 			/*
 			 * Antes de comenzar el bucle habría que mandar al amigo el mensaje de nueva descarga
@@ -533,9 +558,15 @@ public class Profile extends AppCompatActivity {
 			//TODO: Lo que sigue debería estar a la espera de que el amigo dé la señal en un hilo nuevo.
 			byte[] bFile = new byte[8192];
 			int bytesRead;
+			int totalBytesRead = 0;
 			while (!lastPiece){
 				bytesRead = fis.read(bFile);
-				lastPiece = (bytesRead < bFile.length);
+				totalBytesRead += bytesRead;
+				if (isPreview)
+					lastPiece = totalBytesRead >= maxPreviewSize;
+				else
+					lastPiece = (bytesRead < bFile.length);
+
 				msg.put(Utils.LAST_PIECE, lastPiece);
 
 				s = Base64.encodeToString(bFile, Base64.URL_SAFE);
@@ -555,13 +586,42 @@ public class Profile extends AppCompatActivity {
 			}
 
 			fis.close();
-
 			this.pnRTCClient.closeConnection(sendTo);
 
 		}catch(Exception e){
 			e.printStackTrace();
 		}
 	}
+
+	/**
+	 * Cuando el usuario remoto quiere previsualizar un archivo hay que enviarle cierta cantidad de
+	 * datos, pero depende del tipo de archivo. 8KB de un archivo de texto es mucha información,
+	 * mientras que 8KB de un pdf puede ser muy poca. Esté método determina la cantidad de datos
+	 * que se van a enviar en función del tipo del archivo.
+	 * @param ext Extensión del archivo.
+	 * @return Tamaño máximo de datos para el envío.
+	 */
+	private int setMaxPreviewSize(String ext){
+		int maxSize;
+		switch (ext){
+			case "txt": maxSize = 1024; break;
+			case "pdf": maxSize = 100*1024; break;
+			case "mp3": maxSize = 1024*1024; break;
+			case "doc": maxSize = 10*1024; break;
+			case "ppt": maxSize = 100*1024; break;
+			case "html": maxSize = 1024; break;
+			case "css": maxSize = 1024; break;
+			case "xls": maxSize = 10*1024; break;
+			case "jpg": maxSize = 1024*1024; break;
+			case "png": maxSize = 1024*1024; break;
+			case "csv": maxSize = 1024; break;
+			case "mp4": maxSize = 1024*1024*10; break;
+			case "avi": maxSize = 1024*1024*10; break;
+			default: maxSize = 0;
+		}
+		return maxSize;
+	}
+
 
 	private void handleSA(JSONObject jsonMsg){
 		this.downloadService.handleMsg(jsonMsg);

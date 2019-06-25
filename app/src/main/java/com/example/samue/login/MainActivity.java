@@ -3,6 +3,7 @@ package com.example.samue.login;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -41,6 +42,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         String iid = InstanceID.getInstance(this).getId();
+
+        StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+        StrictMode.setVmPolicy(builder.build());
 
         File af = new File("/data/data/com.example.samue.login/files/nombre.txt");
         try {
