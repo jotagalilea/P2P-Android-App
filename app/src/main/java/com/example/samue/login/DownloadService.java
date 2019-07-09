@@ -5,7 +5,6 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Binder;
-import android.os.Environment;
 import android.os.IBinder;
 import android.support.v4.util.Pair;
 import android.util.Base64;
@@ -76,7 +75,6 @@ public class DownloadService extends Service{
 	}
 
 
-
 	public void addDownload(Download d){
 		al_downloads.add(d);
 	}
@@ -87,18 +85,15 @@ public class DownloadService extends Service{
 	}
 
 
+	public boolean stopDownload(String dl_path, String dl_fileName){
+		return managerThread.stopDownload(dl_path, dl_fileName);
+	}
+
+
 	public void stop(){
 		//TODO: No sé si haría falta desvincular todos los clientes. Interrumpir hilos si los hay.
 		this.stopSelf();
 	}
-
-
-	/*private void notificate(String notification){
-		final String notice = notification;
-		Toast.makeText(getApplicationContext(), notice, Toast.LENGTH_LONG).show();
-	}*/
-
-
 
 
 
@@ -152,7 +147,6 @@ public class DownloadService extends Service{
 						 * 1. Recibir primer mensaje con NEW_DL solo con el nombre del fichero y el tamaño.
 						 * 2. Añadir nueva descarga a la cola.
 						 * 		2.1. Si hay hilos libres se arranca uno y se manda un mensaje al amigo para que comience la transferencia.
-						 * 	//TODO: Falta guardar la info del amigo de alguna manera, si no no voy a saber de quién es cada archivo.
 						 * 		2.2. Si no ambos dispositivos se mantienen con el hilo parado hasta que queden un hilo de descarga libre.
 						 * 			 Entonces se avisa al amigo	con START (por ejemplo).
 						 * 			 El amigo que manda el archivo no tiene que hacer nada, sólo está esperando a recibir el aviso para
@@ -167,7 +161,8 @@ public class DownloadService extends Service{
 						if (newDownload) {
 							String friendName = jsonMsg.getString(Utils.FRIEND_NAME);
 							fileLength = jsonMsg.getLong(Utils.FILE_LENGTH);
-							dl = new Download(name, fileLength, friendName);
+							String path = MainActivity.downloadsFolder + name;
+							dl = new Download(name, path, fileLength, friendName);
 							addDownload(dl);
 						}
 
@@ -223,6 +218,7 @@ public class DownloadService extends Service{
 			dl_th.setJSON(jsonMsg);
 			Pair<Object, DownloadThread> pair = new Pair<>(monitor, dl_th);
 			hm_downloads.put(dl.getFileName(), pair);
+			dl_th.setName("DownloaderThread_" + threadsRunning);
 			++threadsRunning;
 			dl_th.start();
 			// TODO: Falta avisar aquí al amigo para que comience la transferencia.
@@ -238,6 +234,30 @@ public class DownloadService extends Service{
 				hm_downloads.remove(dl.getFileName());
 				dl.setStopped();
 			}*/
+		}
+
+
+
+		public boolean stopDownload(String dl_path, String dl_fileName){
+			Pair<Object,ManagerThread.DownloadThread> dl_Pair = hm_downloads.get(dl_fileName);
+			Object monitor = dl_Pair.first;
+			boolean success = false;
+			try{
+				synchronized (monitor){
+					while (newMsgReceived)
+						monitor.wait();
+
+					DownloadThread th = dl_Pair.second;
+					th.interrupt();
+					hm_downloads.remove(dl_fileName);
+					File f = new File(dl_path);
+					f.delete();
+					success = true;
+				}
+			}
+			catch (InterruptedException e){ e.printStackTrace();}
+
+			return success;
 		}
 
 
@@ -267,14 +287,15 @@ public class DownloadService extends Service{
 			@Override
 			public void run(){
 				try{
-					String path = Environment.getExternalStorageDirectory().getPath() + "/P2PArchiveSharing/";
+					/*String path = Environment.getExternalStorageDirectory().getPath() + "/P2PArchiveSharing/";
 					File file = new File(path);
 					if(!file.isDirectory())
 						file.mkdirs();
+					*/
 					name = jsonMsg.getString(Utils.NAME);
-					path += name;
+					String path = dl.getPath();
 					fos = new FileOutputStream(path);
-					file = new File(path);
+					File file = new File(path);
 					bytesWritten = 0;
 
 					dl_timer = new Timer();
@@ -321,8 +342,8 @@ public class DownloadService extends Service{
 							Toast.makeText(getApplicationContext(), "No handler for this type of file.", Toast.LENGTH_LONG).show();
 						}
 					}
-					String completed = "Descargado " + name;
-					Toast.makeText(getApplicationContext(), completed, Toast.LENGTH_LONG).show();
+					//String completed = "Descargado " + name;
+					//Toast.makeText(getApplicationContext(), completed, Toast.LENGTH_LONG).show();
 				} catch(Exception e){
 					e.printStackTrace();
 				}

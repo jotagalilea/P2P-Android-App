@@ -32,6 +32,8 @@ import android.widget.Toast;
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
 import com.pubnub.api.PubnubException;
+import com.tom_roush.pdfbox.multipdf.Splitter;
+import com.tom_roush.pdfbox.pdmodel.PDDocument;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,8 +43,11 @@ import org.webrtc.VideoRendererGui;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 import me.kevingleason.pnwebrtc.PnPeer;
 import me.kevingleason.pnwebrtc.PnRTCClient;
@@ -71,6 +76,7 @@ public class Profile extends AppCompatActivity {
 	public String username;
 	private String archivoCompartido;
 	private int step, total;
+	private FileSender fileSender;
 	ProgressDialog pd;
 	private DownloadService downloadService;
 	private Intent dl_intent;
@@ -268,7 +274,7 @@ public class Profile extends AppCompatActivity {
 				if(resultCode == Activity.RESULT_OK){
 					final String name = data.getStringExtra("name");
 					if(mArchivesDatabase.removeData(name)){
-						Toast.makeText(getApplicationContext(), "Archive "+ name + " erased", Toast.LENGTH_LONG).show();
+						Toast.makeText(getApplicationContext(), "Archivo "+ name + " borrado", Toast.LENGTH_LONG).show();
 					}
 				}
 				break;
@@ -374,7 +380,7 @@ public class Profile extends AppCompatActivity {
 									mDatabaseHelper.removeData(fr, mDatabaseHelper.BLOCKED_TABLE_NAME);
 									loadBlockedUsersList();
 									publish(fr, "FR");
-									Toast.makeText(getApplicationContext(), "Friend request sent", Toast.LENGTH_SHORT).show();
+									Toast.makeText(getApplicationContext(), "Petición de amistad enviada", Toast.LENGTH_SHORT).show();
 									removeBlockedDialog.dismiss();
 								}
 							});
@@ -388,9 +394,9 @@ public class Profile extends AppCompatActivity {
 						}
 						else if(!listContains(fr, al_friends)) {
 							publish(fr, "FR");
-							Toast.makeText(getApplicationContext(), "Friend request sent", Toast.LENGTH_SHORT).show();
+							Toast.makeText(getApplicationContext(), "Petición de amistad enviada", Toast.LENGTH_SHORT).show();
 						}else{
-							Toast.makeText(getApplicationContext(), "you're already friend of " + fr, Toast.LENGTH_SHORT).show();
+							Toast.makeText(getApplicationContext(), "Ya eres amigo de " + fr, Toast.LENGTH_SHORT).show();
 						}
 						mdialog.dismiss();
 					}
@@ -467,12 +473,11 @@ public class Profile extends AppCompatActivity {
 		}
 	}
 
-	private void notificate(String notification){
-		final String notice = notification;
+	private void notificate(final String notification){
 		Profile.this.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				Toast.makeText(getApplicationContext(), notice, Toast.LENGTH_SHORT).show();
+				Toast.makeText(getApplicationContext(), notification, Toast.LENGTH_SHORT).show();
 			}
 		});
 	}
@@ -497,100 +502,130 @@ public class Profile extends AppCompatActivity {
 
 	private void handleRA(JSONObject jsonMsg){
 		try{
-			String archive = jsonMsg.getString(Utils.NAME);
-			String sendTo = jsonMsg.getString("sendTo");
-			Cursor c  = this.mArchivesDatabase.getData(archive);
-
-			c.moveToNext();
-			String path = c.getString(1);
-
-			File file = new File(path);
-			FileInputStream fis = new FileInputStream(file);
-			//BufferedInputStream bis = new BufferedInputStream(fis);
-
-			JSONObject msg = new JSONObject();
-			msg.put(Utils.FRIEND_NAME, this.username);
-			msg.put("type", "SA");
-			msg.put(Utils.NAME, archive);
-
-			String s;
-			int fileLength = (int) file.length();
-
-			// Voy a enviar 8 KB de datos en cada mensaje, codificado aumentará.
-			boolean lastPiece = false;
-			boolean firstPiece = true;
-			msg.put(Utils.FILE_LENGTH, fileLength);
-			msg.put(Utils.NEW_DL, true);
-
-
-			int maxPreviewSize = 0;
-			boolean isPreview = false;
-			//try{
-				isPreview = jsonMsg.getBoolean(Utils.REQ_PREVIEW);
-				if (isPreview) {
-					// La cantidad de datos que se van a enviar dependerá del tipo de archivo:
-					String extension = archive.substring(archive.lastIndexOf('.') + 1).toLowerCase();
-					//TODO: Falta enviar la preview de un vídeo y de una imagen.
-					/*boolean isVideo = (extension.equalsIgnoreCase("mp4") || extension.equalsIgnoreCase("avi"));
-					if (isVideo){
-						sendThumbnail();
-					}*/
-					maxPreviewSize = setMaxPreviewSize(extension);
-					msg.put(Utils.PREVIEW_SENT, true);
-				}
-				else msg.put(Utils.PREVIEW_SENT, false);
-				//TODO: falta hacer que el preview que se manda se pueda abrir en el remoto, a lo mejor esto no hace falta y vale con mandar el archivo cortado tal cual.
-
-			//} catch (JSONException e){
-				// Si no es una previsualización entonces es una descarga completa y no se hace nada.
-			//}
-
-			//TODO: Revisar:
-			/*
-			 * Antes de comenzar el bucle habría que mandar al amigo el mensaje de nueva descarga
-			 * con los datos necesarios y hasta que no reciba respuesta no entra en el while.
-			 * Si este dispositivo ya está enviando un archivo (hilo de envío ocupado) entonces hay que
-			 * decirle al amigo que no puede descargar el archivo de aquí. Entonces el amigo debe intentar
-			 * otra descarga que tenga en espera.
-			 */
-			//pnRTCClient.transmit(sendTo, msg);
-
-			//TODO: Lo que sigue debería estar a la espera de que el amigo dé la señal en un hilo nuevo.
-			byte[] bFile = new byte[8192];
-			int bytesRead;
-			int totalBytesRead = 0;
-			while (!lastPiece){
-				bytesRead = fis.read(bFile);
-				totalBytesRead += bytesRead;
-				if (isPreview)
-					lastPiece = totalBytesRead >= maxPreviewSize;
-				else
-					lastPiece = (bytesRead < bFile.length);
-
-				msg.put(Utils.LAST_PIECE, lastPiece);
-
-				s = Base64.encodeToString(bFile, Base64.URL_SAFE);
-				msg.put(Utils.DATA, s);
-
-				this.pnRTCClient.transmit(sendTo, msg);
-
-				msg.remove(Utils.DATA);
-				msg.remove(Utils.LAST_PIECE);
-
-				if (firstPiece){
-					msg.remove(Utils.FILE_LENGTH);
-					msg.remove(Utils.NEW_DL);
-					msg.put(Utils.NEW_DL, false);
-					firstPiece = false;
-				}
+			boolean cancel_dl;
+			try{
+				cancel_dl = jsonMsg.getBoolean(Utils.CANCEL_DL);
+			} catch (JSONException e){
+				cancel_dl = false;
 			}
 
-			fis.close();
-			this.pnRTCClient.closeConnection(sendTo);
+			if (!cancel_dl){
+				final String userFR = jsonMsg.getString("sendTo");
+				// Si el usuario está bloqueado se desecha la petición silenciosamente.
+				if (!listContains(userFR, al_blocked_users)) {
+					String archive = jsonMsg.getString(Utils.NAME);
+					String sendTo = jsonMsg.getString("sendTo");
+					Cursor c = this.mArchivesDatabase.getData(archive);
 
+					c.moveToNext();
+					String path = c.getString(1);
+					c.close();
+
+					JSONObject msg = new JSONObject();
+					msg.put(Utils.FRIEND_NAME, this.username);
+					msg.put("type", "SA");
+					msg.put(Utils.NAME, archive);
+
+					File file;
+					final FileInputStream fis;
+					long previewSize = 0;
+					final boolean isPreview;
+					isPreview = jsonMsg.getBoolean(Utils.REQ_PREVIEW);
+					if (isPreview) {
+						// La cantidad de datos que se van a enviar dependerá del tipo de archivo:
+						String extension = archive.substring(archive.lastIndexOf('.') + 1).toLowerCase();
+						file = prepareCutDocument(path, extension);
+						previewSize = setPreviewSize(extension);
+						if (previewSize > 0)
+							file = new File(path);
+						else
+							previewSize = file.length();
+						msg.put(Utils.PREVIEW_SENT, true);
+					} else {
+						file = new File(path);
+						msg.put(Utils.PREVIEW_SENT, false);
+					}
+
+					fis = new FileInputStream(file);
+					int fileLength = (int) file.length();
+
+					msg.put(Utils.FILE_LENGTH, fileLength);
+					msg.put(Utils.NEW_DL, true);
+
+
+					//TODO: Revisar:
+					/*
+					 * Antes de comenzar el bucle habría que mandar al amigo el mensaje de nueva descarga
+					 * con los datos necesarios y hasta que no reciba respuesta no entra en el while.
+					 * Si este dispositivo ya está enviando un archivo (hilo de envío ocupado) entonces hay que
+					 * decirle al amigo que no puede descargar el archivo de aquí. Entonces el amigo debe intentar
+					 * otra descarga que tenga en espera.
+					 */
+					//pnRTCClient.transmit(sendTo, msg);
+
+					// Voy a enviar 8 KB de datos en cada mensaje, codificado aumentará.
+					//TODO: Lo que sigue debería estar a la espera de que el amigo dé la señal en un hilo nuevo.
+
+					//TODO: Falta que al recibir nueva petición de descarga se compruebe que no se esté mandando ya un fichero
+					//      en cuyo caso debería quedarse en una cola de espera. Estaría bien un mecanismo de seguridad
+					//      que impida el envío contínuo de ficheros.
+					fileSender = new FileSender();
+					fileSender.setName("fileSender");
+					fileSender.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
+					fileSender.start();
+				}
+				else{
+					fileSender.interrupt();
+				}
+			}
 		}catch(Exception e){
 			e.printStackTrace();
 		}
+	}
+
+
+
+
+	private File prepareCutDocument(String path, String extension){
+		File f;
+		final String preview = "_preview";
+		switch (extension){
+			case "pdf":
+				try {
+					f = new File(path);
+					PDDocument pdf = PDDocument.load(f);
+					Splitter splitter = new Splitter();
+					List<PDDocument> pages = splitter.split(pdf);
+					Iterator<PDDocument> it = pages.listIterator();
+
+					// Se meten 3 páginas.
+					PDDocument pd = new PDDocument();
+					PDDocument aux;
+					byte i = 0;
+					while (it.hasNext() && i<3){
+						aux = it.next();
+						pd.addPage(aux.getPage(0));
+						aux.close();
+						++i;
+					}
+
+					f = new File(path+preview);
+					pd.save(f);
+					pd.close();
+				}catch (IOException e){
+					e.printStackTrace();
+					f = new File(path);
+				}
+				break;
+		//TODO
+			/*case "jpg": break;
+			case "png": break;
+			case "mp4": break;
+			case "avi": break;*/
+			// Si no es ninguno de estos tipos de archivo entonces se pone la ruta normal.
+			default: f = new File(path); break;
+		}
+		return f;
 	}
 
 	/**
@@ -601,22 +636,24 @@ public class Profile extends AppCompatActivity {
 	 * @param ext Extensión del archivo.
 	 * @return Tamaño máximo de datos para el envío.
 	 */
-	private int setMaxPreviewSize(String ext){
+	private int setPreviewSize(String ext){
 		int maxSize;
 		switch (ext){
 			case "txt": maxSize = 1024; break;
-			case "pdf": maxSize = 100*1024; break;
+			//case "pdf": maxSize = 100*1024; break;
 			case "mp3": maxSize = 1024*1024; break;
 			case "doc": maxSize = 10*1024; break;
+			case "docx": maxSize = 10*1024; break;
 			case "ppt": maxSize = 100*1024; break;
 			case "html": maxSize = 1024; break;
 			case "css": maxSize = 1024; break;
 			case "xls": maxSize = 10*1024; break;
-			case "jpg": maxSize = 1024*1024; break;
-			case "png": maxSize = 1024*1024; break;
+			case "xlsx": maxSize = 10*1024; break;
+			//case "jpg": maxSize = 1024*1024; break;
+			//case "png": maxSize = 1024*1024; break;
 			case "csv": maxSize = 1024; break;
-			case "mp4": maxSize = 1024*1024*10; break;
-			case "avi": maxSize = 1024*1024*10; break;
+			//case "mp4": maxSize = 1024*1024*10; break;
+			//case "avi": maxSize = 1024*1024*10; break;
 			default: maxSize = 0;
 		}
 		return maxSize;
@@ -650,7 +687,7 @@ public class Profile extends AppCompatActivity {
 				mdialog.setContentView(R.layout.dialog_acceptfriend);
 				mdialog.show();
 				TextView f_name = (TextView) mdialog.findViewById(R.id.accept_friend_tv);
-				f_name.setText("Do you want to accept " + userFR + " as a friend?");
+				f_name.setText("¿Quieres aceptar a " + userFR + " como amigo?");
 
 				Button yes = mdialog.findViewById(R.id.accept_friend_yes);
 				Button no = mdialog.findViewById(R.id.accept_friend_no);
@@ -720,19 +757,24 @@ public class Profile extends AppCompatActivity {
 
 	private void handleVAL(JSONObject jsonMsg){
 		try{
-			ArrayList<String> al = new ArrayList();
+			boolean blocked = jsonMsg.getBoolean("blocked");
+			if (!blocked) {
+				ArrayList<String> al = new ArrayList();
 
-			int size = jsonMsg.getInt("size");
+				int size = jsonMsg.getInt("size");
 
-			for(int i = 0; i < size; i++){
-				al.add(jsonMsg.getString("item"+i));
+				for (int i = 0; i < size; i++) {
+					al.add(jsonMsg.getString("item" + i));
+				}
+
+				Intent intent = new Intent(Profile.this, Recursos.class);
+				intent.putExtra("lista", al);
+				intent.putExtra("listener", true);
+				intent.putExtra("sendTo", jsonMsg.getString("sendTo"));
+				startActivityForResult(intent, 2); //para volver a esta activity, llamar finish() desde la otra.
 			}
-
-			Intent intent = new Intent(Profile.this, Recursos.class);
-			intent.putExtra("lista", al);
-			intent.putExtra("listener", true);
-			intent.putExtra("sendTo", jsonMsg.getString("sendTo"));
-			startActivityForResult(intent, 2); //para volver a esta activity, llamar finish() desde la otra.
+			else
+				Toast.makeText(this, "No puedes ver los archivos", Toast.LENGTH_LONG).show();
 
 		}catch(Exception e){
 			e.printStackTrace();
@@ -741,16 +783,25 @@ public class Profile extends AppCompatActivity {
 
 	private void VAL(JSONObject jsonMsg){
 		try{
+			final String userFR = jsonMsg.getString("sendTo");
 			JSONObject msg = new JSONObject();
 			msg.put("type", "VAL");
 			msg.put("sendTo", this.username);
-			ArrayList<String> al = getArchivesList();
-			msg.put("size", al.size());
-			int i = 0;
+			// Si el usuario está bloqueado se desecha la petición silenciosamente.
+			if (!listContains(userFR, al_blocked_users)) {
+				ArrayList<String> al = getArchivesList();
+				msg.put("blocked", false);
+				msg.put("size", al.size());
+				int i = 0;
 
-			for(String item : al){
-				msg.put("item"+i, item);
-				i++;
+				for (String item : al) {
+					msg.put("item" + i, item);
+					i++;
+				}
+
+			}
+			else{
+				msg.put("blocked", true);
 			}
 
 			this.pnRTCClient.transmit(jsonMsg.getString("sendTo"), msg);
@@ -758,6 +809,78 @@ public class Profile extends AppCompatActivity {
 			e.printStackTrace();
 		}
 	}
+
+
+	/**
+	 * Hilo para el envío de 1 archivo.
+	 */
+	private class FileSender extends Thread {
+		private long previewLength;
+		private JSONObject msg;
+		private String sendTo2;
+		private File file2;
+		private FileInputStream fis;
+		private boolean isPreview;
+		@Override
+		public void run() {
+			boolean lastPiece = false;
+			boolean firstPiece = true;
+			byte[] bFile = new byte[8192];
+			int bytesRead;
+			int totalBytesRead = 0;
+			String s;
+			try {
+				while (!lastPiece) {
+					bytesRead = fis.read(bFile);
+					totalBytesRead += bytesRead;
+					if (isPreview)
+						if (previewLength > 0)
+							lastPiece = totalBytesRead >= previewLength;
+						else
+							lastPiece = (bytesRead < bFile.length);
+					else
+						lastPiece = (bytesRead < bFile.length);
+
+					msg.put(Utils.LAST_PIECE, lastPiece);
+
+					s = Base64.encodeToString(bFile, Base64.URL_SAFE);
+					msg.put(Utils.DATA, s);
+
+					pnRTCClient.transmit(sendTo2, msg);
+
+					msg.remove(Utils.DATA);
+					msg.remove(Utils.LAST_PIECE);
+
+					if (firstPiece) {
+						msg.remove(Utils.FILE_LENGTH);
+						msg.remove(Utils.NEW_DL);
+						msg.put(Utils.NEW_DL, false);
+						firstPiece = false;
+					}
+				}
+				// Si setPreviewSize devolvió 0 entonces sé que ha sido necesario crear un archivo nuevo, y hay que borrarlo.
+				if (file2.getName().contains("_preview"))
+					file2.delete();
+
+				fis.close();
+				pnRTCClient.closeConnection(sendTo2);
+			} catch (Exception e){
+				e.printStackTrace();
+			}
+		}
+
+
+		public void setVariables(long p, JSONObject j, String s, File f, FileInputStream fiss, boolean prev){
+			previewLength = p;
+			msg = j;
+			sendTo2 = s;
+			file2 = f;
+			fis = fiss;
+			isPreview = prev;
+		}
+	}
+
+
 
 	private class myRTCListener extends PnRTCListener{
 		@Override
@@ -779,7 +902,8 @@ public class Profile extends AppCompatActivity {
 			if (!(message instanceof JSONObject)) return; //Ignore if not JSONObject
 			final JSONObject jsonMsg = (JSONObject) message;
 			try {
-				final String type = jsonMsg.getString("type"); //TODO el manejo de los mensajes estaría bien hacerlos fuera de perfil, ya que no es su objetivo principal
+				final String type = jsonMsg.getString("type");
+				//TODO el manejo de los mensajes estaría bien hacerlos fuera de perfil, ya que no es su objetivo principal
 				if(type.equals("VAR")){
 					VAL(jsonMsg);
 				}else if(type.equals("VAL")){ //se debe manejar en la hebra principal ya que inicia una nueva actividad

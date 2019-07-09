@@ -8,6 +8,7 @@ package com.example.samue.login;
 public class Download {
 	private final String friend;
 	private final String fileName;
+	private final String path;
 	private final String sizeString;
 	private final long size;
 	private int progress;
@@ -24,9 +25,10 @@ public class Download {
 	private int MEGA = 1024*1024;
 
 
-	public Download(String name, long size, String f){
+	public Download(String name, String p, long size, String f){
 		this.friend = f;
 		this.fileName = name;
+		this.path = p;
 		this.size = size;
 		this.sizeString = getSizeString(size);
 		this.progress = 0;
@@ -54,6 +56,10 @@ public class Download {
 
 	public String getFileName() {
 		return fileName;
+	}
+
+	public String getPath() {
+		return path;
 	}
 
 	public String getSizeString() {

@@ -20,6 +20,7 @@ public class Utils {
 	public static final String LAST_PIECE = "lastPiece";
 	public static final String REQ_PREVIEW = "requestPreview";
 	public static final String PREVIEW_SENT = "previewSent";
+	public static final String CANCEL_DL = "cancelDl";
 
 
 	public static final ArrayList<String> EXTENSIONS = new ArrayList<>(

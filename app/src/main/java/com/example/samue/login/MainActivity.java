@@ -3,6 +3,7 @@ package com.example.samue.login;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Environment;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -36,10 +37,12 @@ import util.Constants;
 public class MainActivity extends AppCompatActivity {
 
     private String usuario;
+    public static final String downloadsFolder = Environment.getExternalStorageDirectory().getPath() + "/P2PArchiveSharing/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        createDownloadsFolder();
         setContentView(R.layout.activity_main);
         String iid = InstanceID.getInstance(this).getId();
 
@@ -89,6 +92,16 @@ public class MainActivity extends AppCompatActivity {
             Log.e("Error Nombre", e.getMessage());
         }
 
+    }
+
+
+    /**
+     * Creación del directorio en el que irán las descargas.
+     */
+    private void createDownloadsFolder(){
+        File file = new File(downloadsFolder);
+        if(!file.isDirectory())
+            file.mkdirs();
     }
 
 }
