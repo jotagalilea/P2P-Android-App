@@ -10,8 +10,12 @@
         android:title="Ver usuarios bloqueados"
         app:showAsAction="never"/>
 
+    <item android:id="@+id/see_shared_folders"
+        android:title="Ver carpetas compartidas"
+        app:showAsAction="never"/>
+
     <item android:id="@+id/see_downloads"
-        android:title="Ver descargas"
+        android:title="Descargas"
         app:showAsAction="never"/>
 
     <item android:id="@+id/action_search"

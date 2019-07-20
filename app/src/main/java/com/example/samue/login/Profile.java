@@ -8,11 +8,16 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.ThumbnailUtils;
 import android.os.IBinder;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.util.Pair;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -43,8 +48,11 @@ import org.webrtc.VideoRendererGui;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -67,6 +75,12 @@ public class Profile extends AppCompatActivity {
 	ArrayList<Friends> al_blocked_users;
 	static DatabaseHelper mDatabaseHelper;
 	static final int BLOCKED_USERS_REQUEST = 4;
+	static final int SEE_SHARED_FOLDERS_REQUEST = 5;
+	//Nombre de las carpetas, lista de archivos de cada una.
+	private HashMap<String,ArrayList<String>> sharedFolders;
+	// ¡¡OJO!! antes era: Nombre de los amigos, lista de carpetas a las que tiene acceso cada uno.
+	// Es mejor que sea:  Nombre de las carpetas, lista de amigos que tienen acceso a cada una.
+	private HashMap<String,ArrayList<String>> foldersAccess;
 	ArchivesDatabase mArchivesDatabase;
 	private String userRecursos;
 
@@ -77,6 +91,7 @@ public class Profile extends AppCompatActivity {
 	private String archivoCompartido;
 	private int step, total;
 	private FileSender fileSender;
+	boolean sendingFile;
 	ProgressDialog pd;
 	private DownloadService downloadService;
 	private Intent dl_intent;
@@ -100,12 +115,15 @@ public class Profile extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_profile);
+		sendingFile = false;
 		this.username = getIntent().getExtras().getString("user");
 		this.archivoCompartido = "";
 		this.step = 0; this.total = 0;
 		al_blocked_users = new ArrayList<>();
 		mDatabaseHelper = new DatabaseHelper(this);
 		loadBlockedUsersList();
+		loadSharedFolders();
+		loadFoldersAccess();
 		//blockedUsersHelper = new BlockedUsersHelper(this);
 		mArchivesDatabase = new ArchivesDatabase(this);
 		friends_list = (ListView) findViewById(R.id.friends_list);
@@ -121,12 +139,12 @@ public class Profile extends AppCompatActivity {
 				mdialog.show();
 
 				TextView tv = (TextView) mdialog.findViewById(R.id.confirm_archive_tv);
-				tv.setText("What do you want to do?");
+				tv.setText("¿Qué quieres hacer?");
 
 				Button yes = (Button) mdialog.findViewById(R.id.confirm_archive_yes);
-				yes.setText("Erase");
+				yes.setText("Borrar");
 				Button no = (Button) mdialog.findViewById(R.id.confirm_archive_no);
-				no.setText("View archives");
+				no.setText("Ver archivos");
 
 				no.setOnClickListener(new View.OnClickListener() {
 					@Override
@@ -278,13 +296,16 @@ public class Profile extends AppCompatActivity {
 					}
 				}
 				break;
-			case 4: //Caso para cuando se vuelve de ver los usuarios bloqueados. Hay que recargar la lista.
+			case BLOCKED_USERS_REQUEST: //Caso para cuando se vuelve de ver los usuarios bloqueados. Hay que recargar la lista.
 				if(resultCode == Activity.RESULT_OK){
 					al_blocked_users.clear();
 					al_blocked_users = (ArrayList<Friends>) data.getSerializableExtra("arrayBloqueados");
 					// Si se ha bloqueado a un amigo hay que recargar el arrayList y el adapter.
 					populateListView();
 				}
+				break;
+			case SEE_SHARED_FOLDERS_REQUEST:
+				//TODO
 				break;
 			default:
 				if(!userRecursos.equals("")){
@@ -328,6 +349,13 @@ public class Profile extends AppCompatActivity {
 
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
+			case R.id.see_shared_folders:
+				Intent sfIntent = new Intent(this, SharedFoldersActivity.class);
+				sfIntent.putExtra("sharedFolders", sharedFolders);
+				sfIntent.putExtra("foldersAccess", foldersAccess);
+				startActivityForResult(sfIntent, SEE_SHARED_FOLDERS_REQUEST);
+				return true;
+
 			case R.id.see_downloads:
 				Intent dmIntent = new Intent(this, DownloadManagerActivity.class);
 				dmIntent.putExtra("downloadServiceIntent", this.dl_intent);
@@ -422,7 +450,6 @@ public class Profile extends AppCompatActivity {
 
 	public void addData(String newEntry){ //llamar cuando aceptemos la peticion de amistad y cuando nos la acepten
 		boolean insertData = mDatabaseHelper.addData(newEntry, mDatabaseHelper.FRIENDS_TABLE_NAME);
-
 		if(insertData){
 			populateListView();
 		}
@@ -566,16 +593,22 @@ public class Profile extends AppCompatActivity {
 					// Voy a enviar 8 KB de datos en cada mensaje, codificado aumentará.
 					//TODO: Lo que sigue debería estar a la espera de que el amigo dé la señal en un hilo nuevo.
 
-					//TODO: Falta que al recibir nueva petición de descarga se compruebe que no se esté mandando ya un fichero
-					//      en cuyo caso debería quedarse en una cola de espera. Estaría bien un mecanismo de seguridad
-					//      que impida el envío contínuo de ficheros.
-					fileSender = new FileSender();
-					fileSender.setName("fileSender");
-					fileSender.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
-					fileSender.start();
+					if (!sendingFile) {
+						sendingFile = true;
+						fileSender = new FileSender();
+						fileSender.setName("fileSender");
+						fileSender.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
+						fileSender.start();
+					}
+					else{
+						//TODO: Falta que al recibir nueva petición de descarga se compruebe que no se esté mandando ya un fichero
+						//      en cuyo caso debería quedarse en una cola de espera. Estaría bien un mecanismo de seguridad
+						//      que impida el envío contínuo de ficheros.
+					}
 				}
 				else{
 					fileSender.interrupt();
+					sendingFile = false;
 				}
 			}
 		}catch(Exception e){
@@ -617,10 +650,13 @@ public class Profile extends AppCompatActivity {
 					f = new File(path);
 				}
 				break;
-		//TODO
-			/*case "jpg": break;
-			case "png": break;
-			case "mp4": break;
+			case "jpg":
+			case "jpeg":
+			case "png":
+				f = createThumbnail(path, extension);
+				break;
+			//TODO
+			/*case "mp4": break;
 			case "avi": break;*/
 			// Si no es ninguno de estos tipos de archivo entonces se pone la ruta normal.
 			default: f = new File(path); break;
@@ -628,11 +664,40 @@ public class Profile extends AppCompatActivity {
 		return f;
 	}
 
+
+	/**
+	 * Crea una imagen de calidad reducida para la previsualización.
+	 * @param path Ruta de la imagen.
+	 * @param ext Extensión de la imagen.
+	 * @return Imagen de menor calidad.
+	 */
+	private File createThumbnail(String path, String ext){
+		int width, height;
+		BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = true;
+		BitmapFactory.decodeFile(path, options);
+		width = options.outWidth;
+		height = options.outHeight;
+		Bitmap bmp = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(path), width, height);
+		File f = new File(path+"_preview");
+		try{
+			FileOutputStream fos = new FileOutputStream(f);
+			if (ext.equalsIgnoreCase("png"))
+				bmp.compress(Bitmap.CompressFormat.PNG, 40, fos);
+			else if (ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("jpeg"))
+				bmp.compress(Bitmap.CompressFormat.JPEG, 40, fos);
+			fos.close();
+		} catch (Exception e){
+			e.printStackTrace();
+			f.delete();
+		}
+		return f;
+	}
+
 	/**
 	 * Cuando el usuario remoto quiere previsualizar un archivo hay que enviarle cierta cantidad de
-	 * datos, pero depende del tipo de archivo. 8KB de un archivo de texto es mucha información,
-	 * mientras que 8KB de un pdf puede ser muy poca. Esté método determina la cantidad de datos
-	 * que se van a enviar en función del tipo del archivo.
+	 * datos, pero depende del tipo de archivo. Esté método determina la cantidad de datos que se
+	 * van a enviar en función del tipo del archivo.
 	 * @param ext Extensión del archivo.
 	 * @return Tamaño máximo de datos para el envío.
 	 */
@@ -640,7 +705,6 @@ public class Profile extends AppCompatActivity {
 		int maxSize;
 		switch (ext){
 			case "txt": maxSize = 1024; break;
-			//case "pdf": maxSize = 100*1024; break;
 			case "mp3": maxSize = 1024*1024; break;
 			case "doc": maxSize = 10*1024; break;
 			case "docx": maxSize = 10*1024; break;
@@ -649,8 +713,6 @@ public class Profile extends AppCompatActivity {
 			case "css": maxSize = 1024; break;
 			case "xls": maxSize = 10*1024; break;
 			case "xlsx": maxSize = 10*1024; break;
-			//case "jpg": maxSize = 1024*1024; break;
-			//case "png": maxSize = 1024*1024; break;
 			case "csv": maxSize = 1024; break;
 			//case "mp4": maxSize = 1024*1024*10; break;
 			//case "avi": maxSize = 1024*1024*10; break;
@@ -864,6 +926,7 @@ public class Profile extends AppCompatActivity {
 
 				fis.close();
 				pnRTCClient.closeConnection(sendTo2);
+				sendingFile = false;
 			} catch (Exception e){
 				e.printStackTrace();
 			}
@@ -952,6 +1015,62 @@ public class Profile extends AppCompatActivity {
 		}
 	}
 
+	/**
+	 * Carga de las carpetas compartidas.
+	 */
+	private void loadSharedFolders(){
+		Cursor c = mDatabaseHelper.getData(DatabaseHelper.SHARED_FOLDERS_TABLE);
+		sharedFolders.clear();
+		while (c.moveToNext()){
+			String folder = c.getString(0);
+			String files = c.getString(1);
+			ArrayList<String> al_files = new ArrayList<>(Arrays.asList(files.split(",")));
+			sharedFolders.put(folder, al_files);
+		}
+	}
+
+	/**
+	 * Carga de la lista de acceso de los amigos a las carpetas compartidas.
+	 */
+	// TODO: FALTA REMODELAR PARA LA NUEVA ESTRUCTURA DE LA TABLA DE ACCESO!
+	private void loadFoldersAccess(){
+		Cursor c = mDatabaseHelper.getData(DatabaseHelper.FOLDER_ACCESS_TABLE);
+		foldersAccess.clear();
+		String lastFriend = null;
+		ArrayList<String> al_folders = null;
+
+		while (c.moveToNext()){
+			String friend = c.getString(0);
+			String folder = c.getString(1);
+			//Si el usuario es distinto al anterior o es el primero se crea una nueva entrada:
+			if (!friend.equalsIgnoreCase(lastFriend)) {
+				al_folders = new ArrayList<>(4);
+				foldersAccess.put(friend, al_folders);
+			}
+			al_folders.add(folder);
+			lastFriend = friend;
+		}
+	}
+
+	// Este cargaba como clave en el HashMap el nombre del amigo.
+	/*private void loadFoldersAccess(){
+		Cursor c = mDatabaseHelper.getData(DatabaseHelper.FOLDER_ACCESS_TABLE);
+		foldersAccess.clear();
+		String lastFriend = null;
+		ArrayList<String> al_folders = null;
+
+		while (c.moveToNext()){
+			String friend = c.getString(0);
+			String folder = c.getString(1);
+			//Si el usuario es distinto al anterior o es el primero se crea una nueva entrada:
+			if (!friend.equalsIgnoreCase(lastFriend)) {
+				al_folders = new ArrayList<>(4);
+				foldersAccess.put(friend, al_folders);
+			}
+			al_folders.add(folder);
+			lastFriend = friend;
+		}
+	}*/
 
 	@Override
 	protected void onDestroy(){

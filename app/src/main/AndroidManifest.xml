@@ -36,9 +36,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar">
         <activity
+            android:name=".UsersSharedWith_Activity"
+            android:label="@string/title_activity_users_shared_with_"
+            android:theme="@style/NoActionBar"></activity>
+        <activity android:name=".SharedFoldersActivity" />
+        <activity
             android:name=".DownloadManagerActivity"
             android:label="@string/title_activity_download_manager"
-            android:theme="@style/NoActionBar"></activity>
+            android:theme="@style/NoActionBar" />
         <activity
             android:name=".BlockedUsersActivity"
             android:label="@string/title_activity_blocked_users"
@@ -57,6 +62,7 @@
             android:name=".Recursos"
             android:noHistory="true" />
         <activity android:name=".ArchiveExplorer" />
+
         <service
             android:name=".DownloadService"
             android:directBootAware="true"

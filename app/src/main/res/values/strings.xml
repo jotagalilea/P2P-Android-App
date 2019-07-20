@@ -11,4 +11,13 @@
     <string name="download_item_eta">2h 20min 5s</string>
     <string name="share_folder_title">Compartir carpeta</string>
     <string name="share_folder_question">¿Quieres compartir la carpeta actual?\nNo se compartirán las carpetas anidadas</string>
+    <string name="what_to_do">¿Qué quieres hacer?</string>
+    <string name="see_users">Ver usuarios</string>
+    <string name="see_files">Ver archivos</string>
+    <string name="select_shared_folder_friends">Selecciona los amigos que quieres que tengan acceso:</string>
+    <string name="friend_name_example">Roberto Mendoza</string>
+    <string name="see_shared_folders_title">Carpetas compartidas</string>
+    <string name="folder_name">Nombre carpeta</string>
+    <string name="title_activity_users_shared_with_">UsersSharedWith_Activity</string>
+
 </resources>

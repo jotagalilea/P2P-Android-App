@@ -1,10 +1,13 @@
 package com.example.samue.login;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 public class Friends implements Serializable {
     String nombre;
     int img;
+    ArrayList<String> sharedFolders;
 
     public Friends(String nombre, int img) {
         this.nombre = nombre;
@@ -14,6 +17,21 @@ public class Friends implements Serializable {
     public String getNombre(){return this.nombre;}
 
     public int getImg(){return this.img;}
+
+    public void addAccess2SharedFolder(String s){
+    	sharedFolders.add(s);
+    }
+
+    public boolean removeAccess2SharedFolder(String s){
+		for (int i=0; i<sharedFolders.size(); i++){
+			String item = sharedFolders.get(i);
+			if (item.equals(s))
+				return sharedFolders.remove(item);
+		}
+		return false;
+	}
+
+    public ArrayList<String> getSharedFolders(){return sharedFolders;}
 
 
     @Override
