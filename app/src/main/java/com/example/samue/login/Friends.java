@@ -2,12 +2,11 @@ package com.example.samue.login;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 public class Friends implements Serializable {
-    String nombre;
+    private String nombre;
     int img;
-    ArrayList<String> sharedFolders;
+    //ArrayList<String> sharedFolders;
 
     public Friends(String nombre, int img) {
         this.nombre = nombre;
@@ -18,7 +17,7 @@ public class Friends implements Serializable {
 
     public int getImg(){return this.img;}
 
-    public void addAccess2SharedFolder(String s){
+    /*public void addAccess2SharedFolder(String s){
     	sharedFolders.add(s);
     }
 
@@ -32,7 +31,7 @@ public class Friends implements Serializable {
 	}
 
     public ArrayList<String> getSharedFolders(){return sharedFolders;}
-
+	*/
 
     @Override
 	public boolean equals(Object o) {

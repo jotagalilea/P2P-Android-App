@@ -113,6 +113,8 @@ public class ArchiveExplorer extends AppCompatActivity {
 				mdialog = new Dialog(ArchiveExplorer.this);
 				mdialog.setContentView(R.layout.dialog_share_folder);
 				mdialog.show();
+				//TODO: Falta añadir en algún punto de este listener lo de abrir el diálogo que pregunte
+				// qué amigos se quieren agregar, y también añadir la carpeta a la BD.
 
 				Button yes = mdialog.findViewById(R.id.share_folder_yes);
 				Button no = mdialog.findViewById(R.id.share_folder_no);

@@ -127,38 +127,45 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			return true;
 	}
 
-	/*public boolean addFriends2Folder(ArrayList<Pair<Integer,String>> rows){
+
+	/**
+	 * Añade amigos a la lista de acceso de una carpeta.
+	 * @param friendsNames Lista de nombres de los amigos a añadir.
+	 * @param folder Nombre de la carpeta compartida.
+	 * @return true si la inserción ha tenido éxito. false en otro caso.
+	 */
+	public boolean addFriends2Folder(ArrayList<String> friendsNames, String folder){
 		SQLiteDatabase db = this.getWritableDatabase();
-		long result = 0;
+		// Primero obtengo los id de los usuarios que se van a añadir:
+		String queryIDs = getUsersIDsQuery(friendsNames);
+		Cursor ids = db.rawQuery(queryIDs, null);
+
+		// Después, con un cursor a los ids voy insertando en la tabla de acceso:
 		ContentValues contentValues = new ContentValues();
-		Iterator it = rows.iterator();
-		while (it.hasNext() && (result!=-1)){
+		long result = 0;
+		while (ids.moveToNext() && (result != -1)){
 			contentValues.clear();
-			Pair<Integer,String> row = (Pair<Integer,String>) it.next();
-			contentValues.put(FOLDER_ACCESS_COL1, row.first);
-			contentValues.put(FOLDER_ACCESS_COL2, row.second);
+			contentValues.put(FOLDER_ACCESS_COL1, folder);
+			contentValues.put(FOLDER_ACCESS_COL2, ids.getInt(0));
 			result = db.insert(FOLDER_ACCESS_TABLE, null, contentValues);
 		}
-		Log.d(TAG, "addData: Adding " + rows + " to " + FOLDER_ACCESS_TABLE);
+		Log.d(TAG, "addData: Adding to " + FOLDER_ACCESS_TABLE + " rows:\n" + friendsNames);
 		if (result == -1)
 			return false;
 		else
 			return true;
-	}*/
+	}
 
-	/**
-	 * Añade amigos a la lista de acceso de una carpeta.
-	 * @param rows
-	 * @return
-	 */
-	public boolean addFriends2Folder(ArrayList<Pair<String,Integer>> rows){
+
+
+	/*public boolean addFriends2Folder(ArrayList<Pair<String,Integer>> rows){
 		SQLiteDatabase db = this.getWritableDatabase();
 		long result = 0;
 		ContentValues contentValues = new ContentValues();
 		Iterator it = rows.iterator();
 		while (it.hasNext() && (result!=-1)){
 			contentValues.clear();
-			Pair<Integer,String> row = (Pair<Integer,String>) it.next();
+			Pair<String,Integer> row = (Pair<String,Integer>) it.next();
 			contentValues.put(FOLDER_ACCESS_COL1, row.first);
 			contentValues.put(FOLDER_ACCESS_COL2, row.second);
 			result = db.insert(FOLDER_ACCESS_TABLE, null, contentValues);
@@ -168,11 +175,59 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			return false;
 		else
 			return true;
+	}*/
+
+	/**
+	 * Devuelve el String para la posterior consulta de los id de una lista de nombres de amigos pasada como parámetro.
+	 * @param names lista de nombres de amigos de los cuales se obtendrán los id.
+	 * @return Consulta SELECT en formato String.
+	 */
+	private String getUsersIDsQuery(ArrayList<String> names){
+		StringBuilder queryIDs = new StringBuilder("SELECT " + FRIENDS_COL1 + " FROM " + FRIENDS_TABLE_NAME + " WHERE " + FRIENDS_COL2 + " IN (");
+		for (int i=0; i<names.size(); i++) {
+			queryIDs.append("'");
+			queryIDs.append(names.get(i));
+			queryIDs.append("'");
+			if (i < (names.size()-1))
+				queryIDs.append(",");
+		}
+		queryIDs.append(')');
+		return queryIDs.toString();
 	}
 
 
-	//TODO: Falta método para eliminar de la tabla de acceso a carpetas.
 
+	/**
+	 * Borra amigos de la tabla de acceso a una carpeta.
+	 * @param folder
+	 * @param users
+	 * @return
+	 */
+	public boolean removeFriendsFromFolder(String folder, ArrayList<String> users){
+		//TODO: PROBAR QUE EL BORRADO FUNCIONE CORRECTAMENTE
+		SQLiteDatabase db = this.getWritableDatabase();
+		// Primero obtengo los id de los usuarios a eliminar:
+		String queryIDs = getUsersIDsQuery(users);
+
+		// monto subconsulta:
+		StringBuilder where = new StringBuilder();
+		where.append(folder);
+		where.append(" = ");
+		where.append(FOLDER_ACCESS_COL1);
+		where.append(" AND ");
+		where.append(FOLDER_ACCESS_COL2);
+		where.append(" IN (");
+		where.append(queryIDs);
+		where.append(')');
+
+		// y finalmente el borrado:
+		int result = db.delete(FOLDER_ACCESS_TABLE, where.toString(), null);
+
+		if (result == -1)
+			return false;
+		else
+			return true;
+	}
 
 
 	/**

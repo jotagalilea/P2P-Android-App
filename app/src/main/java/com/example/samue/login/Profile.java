@@ -12,12 +12,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
 import android.os.IBinder;
-import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.util.Pair;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -48,7 +46,6 @@ import org.webrtc.VideoRendererGui;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -88,8 +85,6 @@ public class Profile extends AppCompatActivity {
 	static PnRTCClient pnRTCClient;
 	private Pubnub mPubNub;
 	public String username;
-	private String archivoCompartido;
-	private int step, total;
 	private FileSender fileSender;
 	boolean sendingFile;
 	ProgressDialog pd;
@@ -117,8 +112,6 @@ public class Profile extends AppCompatActivity {
 		setContentView(R.layout.activity_profile);
 		sendingFile = false;
 		this.username = getIntent().getExtras().getString("user");
-		this.archivoCompartido = "";
-		this.step = 0; this.total = 0;
 		al_blocked_users = new ArrayList<>();
 		mDatabaseHelper = new DatabaseHelper(this);
 		loadBlockedUsersList();
@@ -173,7 +166,7 @@ public class Profile extends AppCompatActivity {
 
 		comprobarPermisos();
 
-		fab = (FloatingActionButton) findViewById(R.id.fab);
+		fab = (FloatingActionButton) findViewById(R.id.addFriendsFAB);
 
 		fab.setOnClickListener(new View.OnClickListener() { //TODO debe subir al fichero interno el path del archivo que elije
 			@Override
@@ -247,12 +240,13 @@ public class Profile extends AppCompatActivity {
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
-
 		switch(requestCode){
 			case 1:
 				if(resultCode == Activity.RESULT_OK){
 					int filesAlreadyShared = 0;
 					int folder_share = data.getIntExtra("folder_sharing", -1);
+					// Si se ha compartido una carpeta...
+					//TODO: Falta remodelar para la nueva compartición de carpetas.
 					if (folder_share > -1){
 						HashMap<Integer, MyPair> files = (HashMap<Integer,MyPair>) data.getSerializableExtra("files");
 						for (int i=0; i<folder_share; i++){
@@ -267,6 +261,7 @@ public class Profile extends AppCompatActivity {
 								notificate("Se ha compartido la carpeta");
 						}
 					}
+					// Si no se ha compartido una carpeta entonces se ha compartido un solo archivo:
 					else {
 						String name = data.getStringExtra("name");
 						String path = data.getStringExtra("path");
@@ -305,7 +300,7 @@ public class Profile extends AppCompatActivity {
 				}
 				break;
 			case SEE_SHARED_FOLDERS_REQUEST:
-				//TODO
+				//TODO ¿¿??
 				break;
 			default:
 				if(!userRecursos.equals("")){
@@ -351,6 +346,7 @@ public class Profile extends AppCompatActivity {
 		switch (item.getItemId()) {
 			case R.id.see_shared_folders:
 				Intent sfIntent = new Intent(this, SharedFoldersActivity.class);
+				sfIntent.putExtra("friends", al_friends);
 				sfIntent.putExtra("sharedFolders", sharedFolders);
 				sfIntent.putExtra("foldersAccess", foldersAccess);
 				startActivityForResult(sfIntent, SEE_SHARED_FOLDERS_REQUEST);
@@ -1032,23 +1028,22 @@ public class Profile extends AppCompatActivity {
 	/**
 	 * Carga de la lista de acceso de los amigos a las carpetas compartidas.
 	 */
-	// TODO: FALTA REMODELAR PARA LA NUEVA ESTRUCTURA DE LA TABLA DE ACCESO!
 	private void loadFoldersAccess(){
 		Cursor c = mDatabaseHelper.getData(DatabaseHelper.FOLDER_ACCESS_TABLE);
 		foldersAccess.clear();
-		String lastFriend = null;
-		ArrayList<String> al_folders = null;
+		String lastFolder = null;
+		ArrayList<String> al_friends = null;
 
 		while (c.moveToNext()){
-			String friend = c.getString(0);
-			String folder = c.getString(1);
-			//Si el usuario es distinto al anterior o es el primero se crea una nueva entrada:
-			if (!friend.equalsIgnoreCase(lastFriend)) {
-				al_folders = new ArrayList<>(4);
-				foldersAccess.put(friend, al_folders);
+			String folder = c.getString(0);
+			String friend = c.getString(1);
+			//Si la carpeta es distinta a la anterior o es la primera se crea una nueva entrada:
+			if (!folder.equalsIgnoreCase(lastFolder)) {
+				al_friends = new ArrayList<>(4);
+				foldersAccess.put(folder, al_friends);
 			}
-			al_folders.add(folder);
-			lastFriend = friend;
+			al_friends.add(friend);
+			lastFolder = folder;
 		}
 	}
 

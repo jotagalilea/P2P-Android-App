@@ -38,7 +38,9 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/sf_toolbar" />
+        app:layout_constraintTop_toBottomOf="@+id/sf_toolbar" >
+
+    </ListView>
 
 
 </android.support.constraint.ConstraintLayout>

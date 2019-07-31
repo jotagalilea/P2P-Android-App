@@ -3,6 +3,7 @@ package com.example.samue.login;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -25,6 +26,7 @@ public class SharedFoldersActivity extends AppCompatActivity {
 	private ListView listView;
 	private HashMap<String,ArrayList<String>> sharedFolders;
 	private HashMap<String,ArrayList<String>> foldersAccess;
+	private ArrayList<Friends> al_friends;
 	// foldersNames es útil cuando se selecciona una carpeta de la lista para tomar su nombre y obtener
 	// la lista de archivos de sharedFolders o bien la lista de usuarios con acceso de foldersAccess.
 	private ArrayList<String> foldersNames;
@@ -37,6 +39,7 @@ public class SharedFoldersActivity extends AppCompatActivity {
 		Intent intent = getIntent();
 		sharedFolders = (HashMap<String,ArrayList<String>>) intent.getSerializableExtra("sharedFolders");
 		foldersAccess = (HashMap<String,ArrayList<String>>) intent.getSerializableExtra("folderAccess");
+		al_friends = (ArrayList<Friends>) intent.getSerializableExtra("friends");
 
 		loadFoldersNamesAndPrepareAdapter();
 		//adapter = new FoldersListAdapter(this, android.R.layout.simple_list_item_1, foldersNames);
@@ -72,13 +75,14 @@ public class SharedFoldersActivity extends AppCompatActivity {
 						// de la lista de acceso a la carpeta seleccionada.
 						//TODO: ¿devolver resultado?
 						Intent intent = new Intent(SharedFoldersActivity.this, UsersSharedWith_Activity.class);
+						intent.putExtra("folderName", folder_name);
 						intent.putExtra("users", foldersAccess.get(folder_name));
+						intent.putExtra("friends", al_friends);
 						startActivity(intent);
 					}
 				});
 			}
 		});
-		//TODO ¿?
 	}
 
 

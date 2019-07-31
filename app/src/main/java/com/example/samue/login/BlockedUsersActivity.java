@@ -26,7 +26,7 @@ import java.util.ArrayList;
  */
 public class BlockedUsersActivity extends AppCompatActivity {
 
-	DatabaseHelper helper;
+	private DatabaseHelper helper;
 	private Dialog dialog;
 	private FriendsAdapter adapter;
 	private ListView blocked_users_list;

@@ -18,6 +18,7 @@
     <string name="friend_name_example">Roberto Mendoza</string>
     <string name="see_shared_folders_title">Carpetas compartidas</string>
     <string name="folder_name">Nombre carpeta</string>
-    <string name="title_activity_users_shared_with_">UsersSharedWith_Activity</string>
+    <string name="users_shared_with_title">Amigos con acceso</string>
+
 
 </resources>
