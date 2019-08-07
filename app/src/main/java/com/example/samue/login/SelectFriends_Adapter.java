@@ -18,13 +18,16 @@ public class SelectFriends_Adapter extends ArrayAdapter {
 	private final Context context;
 	private ArrayList<String> friendsSubset;
 	private boolean[] selected;
+	private int countSelected;
 
 
 	public SelectFriends_Adapter(Context c, ArrayList<String> fs){
 		super(c, R.layout.selectfriend_row, fs);
 		context = c;
 		friendsSubset = fs;
-		selected = new boolean[friendsSubset.size()];
+		if (friendsSubset != null)
+			selected = new boolean[friendsSubset.size()];
+		countSelected = 0;
 	}
 
 
@@ -39,6 +42,10 @@ public class SelectFriends_Adapter extends ArrayAdapter {
 			@Override
 			public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
 				selected[j] = compoundButton.isChecked();
+				if (compoundButton.isChecked())
+					++countSelected;
+				else
+					--countSelected;
 			}
 		});
 		return view;
@@ -46,9 +53,13 @@ public class SelectFriends_Adapter extends ArrayAdapter {
 
 
 	/**
-	 * Devuelve qué elementos se han seleccionado para su gestión en la actividad.
+	 * Devuelve qué elementos se han seleccionado para su gestión en la actividad o diálogo.
 	 */
 	public boolean[] getSelected(){
 		return selected;
+	}
+
+	public int getCountSelected(){
+		return countSelected;
 	}
 }

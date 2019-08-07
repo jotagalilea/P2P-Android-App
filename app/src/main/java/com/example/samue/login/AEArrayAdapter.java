@@ -14,6 +14,8 @@ import java.util.HashMap;
 
 /**
  * Created by jotagalilea on 13/06/2019.
+ *
+ * Adaptador para mostrar una lista de archivos con iconos.
  */
 public class AEArrayAdapter extends ArrayAdapter {
 

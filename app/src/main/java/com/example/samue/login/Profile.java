@@ -162,7 +162,7 @@ public class Profile extends AppCompatActivity {
 
 		Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
 		setSupportActionBar(myToolbar);
-		getSupportActionBar().setTitle(getIntent().getExtras().getString("user"));
+		getSupportActionBar().setTitle("Bienvenido/a, " + getIntent().getExtras().getString("user"));
 
 		comprobarPermisos();
 
@@ -172,6 +172,7 @@ public class Profile extends AppCompatActivity {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(Profile.this, ArchiveExplorer.class);
+				intent.putExtra("friendsList", al_friends);
 				startActivityForResult(intent, 1);
 			}
 		});
@@ -243,24 +244,13 @@ public class Profile extends AppCompatActivity {
 		switch(requestCode){
 			case 1:
 				if(resultCode == Activity.RESULT_OK){
-					int filesAlreadyShared = 0;
-					int folder_share = data.getIntExtra("folder_sharing", -1);
-					// Si se ha compartido una carpeta...
-					//TODO: Falta remodelar para la nueva compartición de carpetas.
-					if (folder_share > -1){
-						HashMap<Integer, MyPair> files = (HashMap<Integer,MyPair>) data.getSerializableExtra("files");
-						for (int i=0; i<folder_share; i++){
-							MyPair fileInfo = files.get(i);
-							if (!mArchivesDatabase.exists(fileInfo.getFirst()))
-								mArchivesDatabase.addData(fileInfo.getFirst(), fileInfo.getSecond());
-							else
-								++filesAlreadyShared;
-							if (filesAlreadyShared > 0)
-								notificate(filesAlreadyShared + " archivos ya estaban compartidos");
-							else
-								notificate("Se ha compartido la carpeta");
-						}
+					// Si se ha compartido una carpeta hay que volver a cargar las carpetas y lista de acceso de la BD...
+					boolean isFolderSharing = data.getBooleanExtra("folder_sharing", false);
+					if (isFolderSharing){
+						loadSharedFolders();
+						loadFoldersAccess();
 					}
+
 					// Si no se ha compartido una carpeta entonces se ha compartido un solo archivo:
 					else {
 						String name = data.getStringExtra("name");
@@ -300,7 +290,8 @@ public class Profile extends AppCompatActivity {
 				}
 				break;
 			case SEE_SHARED_FOLDERS_REQUEST:
-				//TODO ¿¿??
+				loadSharedFolders();
+				loadFoldersAccess();
 				break;
 			default:
 				if(!userRecursos.equals("")){
@@ -1004,7 +995,10 @@ public class Profile extends AppCompatActivity {
 	 */
 	private void loadBlockedUsersList() {
 		Cursor c = mDatabaseHelper.getData(DatabaseHelper.BLOCKED_TABLE_NAME);
-		al_blocked_users.clear();
+		if (al_blocked_users != null)
+			al_blocked_users.clear();
+		else
+			al_blocked_users = new ArrayList<>();
 		while (c.moveToNext()){
 			Friends f = new Friends(c.getString(1), R.drawable.ic_launcher_foreground);
 			al_blocked_users.add(f);
@@ -1016,7 +1010,10 @@ public class Profile extends AppCompatActivity {
 	 */
 	private void loadSharedFolders(){
 		Cursor c = mDatabaseHelper.getData(DatabaseHelper.SHARED_FOLDERS_TABLE);
-		sharedFolders.clear();
+		if (sharedFolders != null )
+			sharedFolders.clear();
+		else
+			sharedFolders = new HashMap<>();
 		while (c.moveToNext()){
 			String folder = c.getString(0);
 			String files = c.getString(1);
@@ -1030,18 +1027,22 @@ public class Profile extends AppCompatActivity {
 	 */
 	private void loadFoldersAccess(){
 		Cursor c = mDatabaseHelper.getData(DatabaseHelper.FOLDER_ACCESS_TABLE);
-		foldersAccess.clear();
+		if (foldersAccess != null)
+			foldersAccess.clear();
+		else
+			foldersAccess = new HashMap<>();
 		String lastFolder = null;
 		ArrayList<String> al_friends = null;
 
 		while (c.moveToNext()){
 			String folder = c.getString(0);
-			String friend = c.getString(1);
+			int friendID = c.getInt(1);
 			//Si la carpeta es distinta a la anterior o es la primera se crea una nueva entrada:
 			if (!folder.equalsIgnoreCase(lastFolder)) {
 				al_friends = new ArrayList<>(4);
 				foldersAccess.put(folder, al_friends);
 			}
+			String friend = mDatabaseHelper.getUserName(friendID);
 			al_friends.add(friend);
 			lastFolder = folder;
 		}

@@ -18,6 +18,7 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ public class ArchiveExplorer extends AppCompatActivity {
 	private ArrayAdapter adaptador;
 	private String directorioRaiz;
 	private TextView carpetaActual;
+	private String currentFolder;
 	private ListView listaItems;
 	private FloatingActionButton fab;
 	private File[] listaArchivos;
@@ -45,6 +47,7 @@ public class ArchiveExplorer extends AppCompatActivity {
 
 		verArchivosDirectorio(directorioRaiz);
 
+		// Compartir un archivo:
 		listaItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -113,8 +116,6 @@ public class ArchiveExplorer extends AppCompatActivity {
 				mdialog = new Dialog(ArchiveExplorer.this);
 				mdialog.setContentView(R.layout.dialog_share_folder);
 				mdialog.show();
-				//TODO: Falta añadir en algún punto de este listener lo de abrir el diálogo que pregunte
-				// qué amigos se quieren agregar, y también añadir la carpeta a la BD.
 
 				Button yes = mdialog.findViewById(R.id.share_folder_yes);
 				Button no = mdialog.findViewById(R.id.share_folder_no);
@@ -136,17 +137,49 @@ public class ArchiveExplorer extends AppCompatActivity {
 						new android.os.Handler().postDelayed(
 								new Runnable() {
 									public void run() {
-										Intent result = new Intent();
-										result.putExtra("folder_sharing", listaArchivos.length);
-										HashMap<Integer, MyPair> files = new HashMap<>(listaArchivos.length);
-										for(int i=0; i<listaArchivos.length; i++){
-											if (listaArchivos[i].isFile())
-												files.put(i, new MyPair(listaArchivos[i].getName(), listaArchivos[i].getPath()));
-										}
-										result.putExtra("files", files);
-										setResult(RESULT_OK, result);
-										finish();
-										progressDialog.dismiss();
+										// Abrir diálogo para añadir amigos:
+										final Dialog addFriendsDl = new Dialog(ArchiveExplorer.this);
+										addFriendsDl.setContentView(R.layout.dialog_addfriendssharedfolder);
+
+										// Obtener lista de amigos:
+										Intent intent = getIntent();
+										final ArrayList<Friends> friendsList = (ArrayList<Friends>) intent.getSerializableExtra("friendsList");
+										final ArrayList<String> friendsNames = Utils.getFriendsArrayListAsStrings(friendsList);
+										ListView selectionList = addFriendsDl.findViewById(R.id.select_friends_list);
+										final SelectFriends_Adapter fAdapter = new SelectFriends_Adapter(ArchiveExplorer.this, friendsNames);
+										selectionList.setAdapter(fAdapter);
+										addFriendsDl.show();
+
+										Button addSelected = addFriendsDl.findViewById(R.id.button_add_selected);
+										addSelected.setOnClickListener(new View.OnClickListener() {
+											@Override
+											public void onClick(View view) {
+												// Si hay alguno seleccionado se procede:
+												if (fAdapter.getCountSelected() > 0) {
+													// Se añade la carpeta con los nombres de los archivos que contiene a la BD, excluyendo '../':
+													ArrayList<String> sublist = new ArrayList<String>(listaNombresArchivos.subList(1,listaNombresArchivos.size()));
+													Profile.mDatabaseHelper.addSharedFolder(currentFolder, Utils.joinStrings(",",sublist));
+													// Se añaden los amigos seleccionados  la tabla de acceso:
+													boolean selected[] = fAdapter.getSelected();
+													ArrayList<String> friendsSelected = new ArrayList<>();
+													for (int i = 0; i < friendsList.size(); i++) {
+														if (selected[i])
+															friendsSelected.add(friendsNames.get(i));
+													}
+													Profile.mDatabaseHelper.addFriends2Folder(friendsSelected, currentFolder);
+													Intent result = new Intent();
+													result.putExtra("folder_sharing", true);
+													setResult(RESULT_OK, result);
+													progressDialog.dismiss();
+													addFriendsDl.dismiss();
+													finish();
+												}
+												// Si no hay ninguno seleccionado...
+												else{
+													Toast.makeText(ArchiveExplorer.this, "ERROR: Ningún amigo seleccionado", Toast.LENGTH_SHORT).show();
+												}
+											}
+										});
 									}
 								}, 2000);
 						mdialog.dismiss();
@@ -156,8 +189,10 @@ public class ArchiveExplorer extends AppCompatActivity {
 		});
 	}
 
+
 	private void verArchivosDirectorio(String rutaDirectorio) {
 		carpetaActual.setText("Estas en: " + rutaDirectorio);
+		currentFolder = rutaDirectorio;
 		listaNombresArchivos = new ArrayList();
 		listaRutasArchivos = new ArrayList();
 		File directorioActual = new File(rutaDirectorio);

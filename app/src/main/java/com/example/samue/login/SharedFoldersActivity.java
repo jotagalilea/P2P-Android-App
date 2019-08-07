@@ -3,7 +3,6 @@ package com.example.samue.login;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -11,20 +10,21 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 public class SharedFoldersActivity extends AppCompatActivity {
 
-	//TODO Implementar adaptador.
 	//private FoldersListAdapter adapter;
 	private SimpleAdapter adapter;
 	private ListView listView;
+	//Nombre de las carpetas, lista de archivos de cada una.
 	private HashMap<String,ArrayList<String>> sharedFolders;
+	// Nombre de las carpetas, lista de amigos que tienen acceso a cada una.
 	private HashMap<String,ArrayList<String>> foldersAccess;
 	private ArrayList<Friends> al_friends;
 	// foldersNames es útil cuando se selecciona una carpeta de la lista para tomar su nombre y obtener
@@ -38,7 +38,7 @@ public class SharedFoldersActivity extends AppCompatActivity {
 		setContentView(R.layout.activity_shared_folders);
 		Intent intent = getIntent();
 		sharedFolders = (HashMap<String,ArrayList<String>>) intent.getSerializableExtra("sharedFolders");
-		foldersAccess = (HashMap<String,ArrayList<String>>) intent.getSerializableExtra("folderAccess");
+		foldersAccess = (HashMap<String,ArrayList<String>>) intent.getSerializableExtra("foldersAccess");
 		al_friends = (ArrayList<Friends>) intent.getSerializableExtra("friends");
 
 		loadFoldersNamesAndPrepareAdapter();
@@ -47,7 +47,7 @@ public class SharedFoldersActivity extends AppCompatActivity {
 			@Override
 			public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 				final String folder_name = foldersNames.get(i);
-				Dialog dialog = new Dialog(SharedFoldersActivity.this);
+				final Dialog dialog = new Dialog(SharedFoldersActivity.this);
 				dialog.setContentView(R.layout.dialog_sf_options);
 				dialog.show();
 
@@ -55,15 +55,17 @@ public class SharedFoldersActivity extends AppCompatActivity {
 				seeFiles.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View view) {
-						// TODO: Probar:
 						// Se abre un diálogo con los archivos que hay en la carpeta seleccionada.
-						Dialog dialog = new Dialog(SharedFoldersActivity.this);
-						dialog.setContentView(R.layout.dialog_see_files);
+						Dialog dialog2 = new Dialog(SharedFoldersActivity.this);
+						dialog2.setContentView(R.layout.dialog_see_files);
+						TextView title = dialog2.findViewById(R.id.folder_name);
+						title.setText(folder_name.substring(folder_name.lastIndexOf('/')+1));
 						AEArrayAdapter filesAdapter = new AEArrayAdapter(SharedFoldersActivity.this,
 								android.R.layout.simple_list_item_1, sharedFolders.get(folder_name));
-						ListView files_list = dialog.findViewById(R.id.files_list);
+						ListView files_list = dialog2.findViewById(R.id.files_list);
 						files_list.setAdapter(filesAdapter);
-						dialog.show();
+						dialog2.show();
+						dialog.dismiss();
 					}
 				});
 
@@ -73,16 +75,26 @@ public class SharedFoldersActivity extends AppCompatActivity {
 					public void onClick(View view) {
 						// Se abre la actividad que permite ver, añadir o eliminar algún usuario
 						// de la lista de acceso a la carpeta seleccionada.
-						//TODO: ¿devolver resultado?
-						Intent intent = new Intent(SharedFoldersActivity.this, UsersSharedWith_Activity.class);
+						Intent intent = new Intent(SharedFoldersActivity.this, UsersSharedWithActivity.class);
 						intent.putExtra("folderName", folder_name);
 						intent.putExtra("users", foldersAccess.get(folder_name));
 						intent.putExtra("friends", al_friends);
-						startActivity(intent);
+						dialog.dismiss();
+						startActivityForResult(intent, 1);
 					}
 				});
 			}
 		});
+	}
+
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		// Recargar el adapter con los cambios hechos:
+		boolean someRemovedOrAdded = data.getBooleanExtra("someRemovedOrAdded", false);
+		if (someRemovedOrAdded)
+			reloadSharedFoldersData();
 	}
 
 
@@ -102,6 +114,18 @@ public class SharedFoldersActivity extends AppCompatActivity {
 
 
 	/**
+	 * Accede a la BD para obtener las carpetas compartidas y los usuarios con acceso a dichas carpetas.
+	 * Si ha habido algún cambio en los usuarios que tienen acceso a una carpeta compartida o se ha
+	 * añadido, modificado, o eliminado alguna carpeta compartida se ha de llamar a este método.
+	 */
+	private void reloadSharedFoldersData(){
+		sharedFolders = Profile.mDatabaseHelper.getSharedFolders();
+		foldersAccess = Profile.mDatabaseHelper.getFoldersAccess();
+		loadFoldersNamesAndPrepareAdapter();
+	}
+
+
+	/**
 	 * Carga los datos de las carpetas compartidas en el adapter.
 	 */
 	private void loadFoldersNamesAndPrepareAdapter(){
@@ -110,13 +134,18 @@ public class SharedFoldersActivity extends AppCompatActivity {
 
 		Iterator it = sharedFolders.entrySet().iterator();
 		while (it.hasNext()) {
-			String item = (String) it.next();
-			foldersNames.add(item);
+			Map.Entry item = (Map.Entry) it.next();
+			String folder_name = (String) item.getKey();
+			foldersNames.add(folder_name);
 			HashMap<String,String> map = new HashMap<>(2);
 			//Obtiene el número de usuarios con acceso:
-			int people = foldersAccess.get(item).size();
-			map.put("name", item);
-			map.put("users", Integer.toString(people));
+			int people = 0;
+			ArrayList ar_people = foldersAccess.get(folder_name);
+			if (ar_people != null)
+				people = foldersAccess.get(folder_name).size();
+
+			map.put("name", folder_name);
+			map.put("users", "Amigos con acceso: " + people);
 			//Añade a la lista el nombre de la carpeta y el número de personas con acceso.
 			list.add(map);
 		}

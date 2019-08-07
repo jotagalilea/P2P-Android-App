@@ -6,12 +6,12 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.support.v4.util.Pair;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 
 
 public class DatabaseHelper extends SQLiteOpenHelper {
@@ -114,12 +114,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			return true;
 	}
 
-	public boolean addSharedFolder(Pair<String,String> row){
+	public boolean addSharedFolder(String folder, String files){
 		SQLiteDatabase db = this.getWritableDatabase();
 		ContentValues contentValues = new ContentValues();
-		contentValues.put(SHARED_FOLDERS_COL1, row.first);
-		contentValues.put(SHARED_FOLDERS_COL2, row.second);
-		Log.d(TAG, "addData: Adding " + row + " to " + SHARED_FOLDERS_TABLE);
+		contentValues.put(SHARED_FOLDERS_COL1, folder);
+		contentValues.put(SHARED_FOLDERS_COL2, files);
+		Log.d(TAG, "addData: Adding " + folder + " to " + SHARED_FOLDERS_TABLE);
 		long result = db.insert(SHARED_FOLDERS_TABLE, null, contentValues);
 		if (result == -1)
 			return false;
@@ -158,25 +158,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
 
-	/*public boolean addFriends2Folder(ArrayList<Pair<String,Integer>> rows){
-		SQLiteDatabase db = this.getWritableDatabase();
-		long result = 0;
-		ContentValues contentValues = new ContentValues();
-		Iterator it = rows.iterator();
-		while (it.hasNext() && (result!=-1)){
-			contentValues.clear();
-			Pair<String,Integer> row = (Pair<String,Integer>) it.next();
-			contentValues.put(FOLDER_ACCESS_COL1, row.first);
-			contentValues.put(FOLDER_ACCESS_COL2, row.second);
-			result = db.insert(FOLDER_ACCESS_TABLE, null, contentValues);
-		}
-		Log.d(TAG, "addData: Adding to " + FOLDER_ACCESS_TABLE + " rows:\n" + rows);
-		if (result == -1)
-			return false;
-		else
-			return true;
-	}*/
-
 	/**
 	 * Devuelve el String para la posterior consulta de los id de una lista de nombres de amigos pasada como parámetro.
 	 * @param names lista de nombres de amigos de los cuales se obtendrán los id.
@@ -211,7 +192,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 		// monto subconsulta:
 		StringBuilder where = new StringBuilder();
+		where.append("\"");
 		where.append(folder);
+		where.append("\"");
 		where.append(" = ");
 		where.append(FOLDER_ACCESS_COL1);
 		where.append(" AND ");
@@ -222,6 +205,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 		// y finalmente el borrado:
 		int result = db.delete(FOLDER_ACCESS_TABLE, where.toString(), null);
+
+		if (result == -1)
+			return false;
+		else
+			return true;
+	}
+
+
+	/**
+	 * Borra una carpeta compartida.
+	 * @param folder
+	 * @return
+	 */
+	public boolean removeSharedFolder(String folder){
+		SQLiteDatabase db = this.getWritableDatabase();
+		String[] args = new String[]{folder};
+
+		int result = db.delete(SHARED_FOLDERS_TABLE, "folder=?", args);
 
 		if (result == -1)
 			return false;
@@ -262,6 +263,61 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Cursor data = db.rawQuery(q, null);
         return data;
     }
+
+
+	/**
+	 * Obtiene el nombre de un usuario dado su id.
+	 * @param id
+	 * @return
+	 */
+	public String getUserName(int id){
+		SQLiteDatabase db = this.getWritableDatabase();
+		String q = "SELECT "+ FRIENDS_COL2 +" FROM " + FRIENDS_TABLE_NAME + " WHERE " + FRIENDS_COL1 + " = " + id;
+		Cursor data = db.rawQuery(q, null);
+		data.moveToNext();
+		return data.getString(0);
+	}
+
+
+	public HashMap<String,ArrayList<String>> getSharedFolders(){
+		HashMap<String, ArrayList<String>> result = new HashMap<>();
+		SQLiteDatabase db = this.getWritableDatabase();
+		String q = "SELECT * FROM " + SHARED_FOLDERS_TABLE;
+		Cursor data = db.rawQuery(q, null);
+
+		while (data.moveToNext()){
+			String folder = data.getString(0);
+			String files = data.getString(1);
+			ArrayList<String> al_files = new ArrayList<>(Arrays.asList(files.split(",")));
+			result.put(folder, al_files);
+		}
+		return result;
+	}
+
+
+	public HashMap<String,ArrayList<String>> getFoldersAccess(){
+		HashMap<String, ArrayList<String>> result = new HashMap<>();
+		SQLiteDatabase db = this.getWritableDatabase();
+		String q = "SELECT * FROM " + FOLDER_ACCESS_TABLE;
+		Cursor data = db.rawQuery(q, null);
+
+		String lastFolder = null;
+		ArrayList<String> al_friends = null;
+
+		while (data.moveToNext()){
+			String folder = data.getString(0);
+			int friendID = data.getInt(1);
+			//Si la carpeta es distinta a la anterior o es la primera se crea una nueva entrada:
+			if (!folder.equalsIgnoreCase(lastFolder)) {
+				al_friends = new ArrayList<>(4);
+				result.put(folder, al_friends);
+			}
+			String friend = getUserName(friendID);
+			al_friends.add(friend);
+			lastFolder = folder;
+		}
+		return result;
+	}
 
 
 

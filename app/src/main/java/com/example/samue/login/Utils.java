@@ -3,6 +3,7 @@ package com.example.samue.login;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * Created by jotagalilea on 27/03/2019.
@@ -27,4 +28,29 @@ public class Utils {
 		Arrays.asList("txt","pdf","mp3","mp4","zip","doc","ppt","html","css","xls","jpg","png","csv","avi")
 	);
 
+
+	public static final ArrayList<String> getFriendsArrayListAsStrings(ArrayList<Friends> af){
+		ArrayList<String> as = new ArrayList<>(af.size());
+		for (Friends f: af) {
+			as.add(f.getNombre());
+		}
+		return as;
+	}
+
+	/**
+	 * Método igual a String.join(...) implementado para no cambiar la API mínima a la 26.
+	 * @param delimiter Caracteres que delimitarán cada cadena.
+	 * @param al ArrayList de Strings que van a ser unidos.
+	 * @return
+	 */
+	public static String joinStrings(String delimiter, ArrayList<String> al){
+		StringBuilder sb = new StringBuilder();
+		Iterator it = al.iterator();
+		while (it.hasNext()){
+			sb.append(it.next());
+			if (it.hasNext())
+				sb.append(delimiter);
+		}
+		return sb.toString();
+	}
 }
