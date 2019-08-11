@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
 import android.os.IBinder;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -38,6 +39,7 @@ import com.pubnub.api.PubnubException;
 import com.tom_roush.pdfbox.multipdf.Splitter;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.MediaStream;
@@ -53,6 +55,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import me.kevingleason.pnwebrtc.PnPeer;
 import me.kevingleason.pnwebrtc.PnRTCClient;
@@ -70,13 +73,13 @@ public class Profile extends AppCompatActivity {
 	FriendsAdapter adapter;
 	ArrayList<Friends> al_friends;
 	ArrayList<Friends> al_blocked_users;
+	private String selectedFolder = null;
 	static DatabaseHelper mDatabaseHelper;
 	static final int BLOCKED_USERS_REQUEST = 4;
 	static final int SEE_SHARED_FOLDERS_REQUEST = 5;
-	//Nombre de las carpetas, lista de archivos de cada una.
+	// Nombre de las carpetas, lista de archivos de cada una.
 	private HashMap<String,ArrayList<String>> sharedFolders;
-	// ¡¡OJO!! antes era: Nombre de los amigos, lista de carpetas a las que tiene acceso cada uno.
-	// Es mejor que sea:  Nombre de las carpetas, lista de amigos que tienen acceso a cada una.
+	// Nombre de las carpetas, lista de amigos que tienen acceso a cada una.
 	private HashMap<String,ArrayList<String>> foldersAccess;
 	ArchivesDatabase mArchivesDatabase;
 	private String userRecursos;
@@ -128,18 +131,14 @@ public class Profile extends AppCompatActivity {
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				final String connectTo = al_friends.get(position).getNombre();
 				mdialog = new Dialog(Profile.this);
-				mdialog.setContentView(R.layout.dialog_confirmsharedarchive);
+				mdialog.setContentView(R.layout.dialog_friend_options);
 				mdialog.show();
 
-				TextView tv = (TextView) mdialog.findViewById(R.id.confirm_archive_tv);
-				tv.setText("¿Qué quieres hacer?");
+				Button deleteButton = mdialog.findViewById(R.id.deleteButton);
+				Button seeFilesButton = mdialog.findViewById(R.id.seefriendfilesButton);
+				Button seeFriendSFButton = mdialog.findViewById(R.id.seefriendSFButton);
 
-				Button yes = (Button) mdialog.findViewById(R.id.confirm_archive_yes);
-				yes.setText("Borrar");
-				Button no = (Button) mdialog.findViewById(R.id.confirm_archive_no);
-				no.setText("Ver archivos");
-
-				no.setOnClickListener(new View.OnClickListener() {
+				seeFilesButton.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
 						mdialog.dismiss();
@@ -148,13 +147,22 @@ public class Profile extends AppCompatActivity {
 					}
 				});
 
-				yes.setOnClickListener(new View.OnClickListener() {
+				deleteButton.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
 						mdialog.dismiss();
 						mDatabaseHelper.removeData(connectTo, mDatabaseHelper.FRIENDS_TABLE_NAME);
 						populateListView();
-						Toast.makeText(getApplicationContext(), "Friend "+ connectTo + " removed", Toast.LENGTH_LONG).show();
+						Toast.makeText(getApplicationContext(), "Amigo "+ connectTo + " eliminado", Toast.LENGTH_LONG).show();
+					}
+				});
+
+				seeFriendSFButton.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View view) {
+						mdialog.dismiss();
+						userRecursos = connectTo;
+						publish(connectTo, "VSF"); //View Shared Folders
 					}
 				});
 			}
@@ -162,7 +170,7 @@ public class Profile extends AppCompatActivity {
 
 		Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
 		setSupportActionBar(myToolbar);
-		getSupportActionBar().setTitle("Bienvenido/a, " + getIntent().getExtras().getString("user"));
+		getSupportActionBar().setTitle("Hola, " + getIntent().getExtras().getString("user"));
 
 		comprobarPermisos();
 
@@ -200,6 +208,8 @@ public class Profile extends AppCompatActivity {
 						VAR(connectTo);
 					}else if(connectionType.equals("FR")){
 						FR(connectTo);
+					}else if(connectionType.equals("VSF")){
+						VSF(connectTo);
 					}
 				}
 			});
@@ -310,14 +320,14 @@ public class Profile extends AppCompatActivity {
 					Profile.this.runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							Toast.makeText(Profile.this, "now you can share archives :)", Toast.LENGTH_SHORT).show();
+							Toast.makeText(Profile.this, "Ahora puedes compartir archivos :)", Toast.LENGTH_SHORT).show();
 						}
 					});
 				}else{
 					Profile.this.runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							Toast.makeText(Profile.this, "cannot access to archives", Toast.LENGTH_SHORT).show();
+							Toast.makeText(Profile.this, "No se puede acceder a los archivos", Toast.LENGTH_SHORT).show();
 						}
 					});
 				}
@@ -356,8 +366,6 @@ public class Profile extends AppCompatActivity {
 				return true;
 
 			case R.id.see_shared_archives:
-				// User chose the "Settings" item, show the app settings UI...
-				//Toast.makeText(getBaseContext(), "Settings clicked", Toast.LENGTH_LONG).show();
 				final ArrayList<String> al = getArchivesList();
 				Intent intent = new Intent(Profile.this, Recursos.class);
 				intent.putExtra("lista", al);
@@ -507,6 +515,10 @@ public class Profile extends AppCompatActivity {
 			msg.put("sendTo", this.username);
 			msg.put(Utils.NAME, name);
 			msg.put(Utils.REQ_PREVIEW, isPreview);
+			if (selectedFolder != null){
+				msg.put("selectedFolder", selectedFolder);
+				selectedFolder = null;
+			}
 
 			this.pnRTCClient.transmit(sendTo, msg);
 		}catch(Exception e){
@@ -529,11 +541,24 @@ public class Profile extends AppCompatActivity {
 				if (!listContains(userFR, al_blocked_users)) {
 					String archive = jsonMsg.getString(Utils.NAME);
 					String sendTo = jsonMsg.getString("sendTo");
-					Cursor c = this.mArchivesDatabase.getData(archive);
+					String folder;
+					try{
+						folder = jsonMsg.getString("selectedFolder");
+					} catch (JSONException e){
+						folder = null;
+					}
 
-					c.moveToNext();
-					String path = c.getString(1);
-					c.close();
+					String path;
+					if (folder != null) {
+						path = folder + '/' + archive;
+					}
+					else {
+						Cursor c = this.mArchivesDatabase.getData(archive);
+						c.moveToNext();
+						path = c.getString(1);
+						c.close();
+					}
+
 
 					JSONObject msg = new JSONObject();
 					msg.put(Utils.FRIEND_NAME, this.username);
@@ -804,6 +829,22 @@ public class Profile extends AppCompatActivity {
 		}
 	}
 
+	/**
+	 * Método que envía la petición para ver las carpetas compartidas de un amigo.
+	 * @param sendTo
+	 */
+	private void VSF(String sendTo){
+		try{
+			JSONObject msg = new JSONObject();
+			msg.put("type", "VSF");
+			msg.put("sendTo", this.username);
+
+			this.pnRTCClient.transmit(sendTo, msg);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+
 	private void handleVAL(JSONObject jsonMsg){
 		try{
 			boolean blocked = jsonMsg.getBoolean("blocked");
@@ -836,7 +877,7 @@ public class Profile extends AppCompatActivity {
 			JSONObject msg = new JSONObject();
 			msg.put("type", "VAL");
 			msg.put("sendTo", this.username);
-			// Si el usuario está bloqueado se desecha la petición silenciosamente.
+			// Si el usuario no está bloqueado...
 			if (!listContains(userFR, al_blocked_users)) {
 				ArrayList<String> al = getArchivesList();
 				msg.put("blocked", false);
@@ -847,16 +888,145 @@ public class Profile extends AppCompatActivity {
 					msg.put("item" + i, item);
 					i++;
 				}
-
 			}
 			else{
 				msg.put("blocked", true);
 			}
-
 			this.pnRTCClient.transmit(jsonMsg.getString("sendTo"), msg);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
+	}
+
+
+
+	/**
+	 * Maneja la petición de ver carpetas compartidas por parte de un amigo.
+	 * @param jsonMsg
+	 */
+	private void handleVSF(JSONObject jsonMsg){
+		try{
+			final String userFR = jsonMsg.getString("sendTo");
+			JSONObject msg = new JSONObject();
+			// Si el usuario no está bloqueado...
+			if (!listContains(userFR, al_blocked_users)) {
+
+				// Si el amigo tiene acceso a una o más carpetas, se le envían:
+				HashMap<String,ArrayList<String>> sf = getFriendAllowedFolders(userFR);
+				if (!sf.isEmpty()) {
+					msg = new JSONObject(sf);
+					msg.put(Utils.FOLDERSHARING_SPECIAL_CHARS + "type", "SF");
+					msg.put(Utils.FOLDERSHARING_SPECIAL_CHARS + "SFallowed", true);
+					msg.put(Utils.FOLDERSHARING_SPECIAL_CHARS + "blocked", false);
+					msg.put(Utils.FOLDERSHARING_SPECIAL_CHARS + "foldersCount", sf.size());
+					msg.put(Utils.FOLDERSHARING_SPECIAL_CHARS + "sendTo", this.username);
+				}
+				//Si no tiene acceso a ninguna carpeta compartida también se le hace saber:
+				else {
+					msg.put(Utils.FOLDERSHARING_SPECIAL_CHARS + "type", "SF");
+					msg.put(Utils.FOLDERSHARING_SPECIAL_CHARS + "SFallowed", false);
+					msg.put(Utils.FOLDERSHARING_SPECIAL_CHARS + "blocked", false);
+				}
+			}
+			else{
+				msg.put(Utils.FOLDERSHARING_SPECIAL_CHARS + "blocked", true);
+			}
+			this.pnRTCClient.transmit(jsonMsg.getString("sendTo"), msg);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Maneja la respuesta a la petición de ver carpetas compartidas.
+	 */
+	private void handleSF(JSONObject json){
+		try {
+			// Primero se comprueba si estoy bloqueado por si acaso.
+			boolean blocked = json.getBoolean(Utils.FOLDERSHARING_SPECIAL_CHARS + "blocked");
+			if (!blocked) {
+				// Después se comprueba si tengo permitido el acceso a alguna carpeta.
+				boolean allowed = json.getBoolean(Utils.FOLDERSHARING_SPECIAL_CHARS + "SFallowed");
+				if (allowed) {
+					int size = json.getInt(Utils.FOLDERSHARING_SPECIAL_CHARS + "foldersCount");
+					final String sendTo = json.getString(Utils.FOLDERSHARING_SPECIAL_CHARS + "sendTo");
+					final HashMap<String, ArrayList<String>> map = new HashMap<>(size);
+
+					Iterator<String> keysIt = json.keys();
+					while (keysIt.hasNext()) {
+						String key = keysIt.next();
+						// Si no empieza con los caracteres especiales entonces es la info de una carpeta.
+						if (!key.startsWith(Utils.FOLDERSHARING_SPECIAL_CHARS)) {
+							JSONArray jsonArray = (JSONArray) json.get(key);
+							ArrayList<String> filesList = new ArrayList<>(jsonArray.length());
+							for (int i=0; i<jsonArray.length(); i++)
+								filesList.add(jsonArray.getString(i));
+							map.put(key, filesList);
+						}
+					}
+
+					// Reutilizo el diálogo para ver el contenido de una carpeta compartida propia.
+					Profile.this.runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							final Dialog dialog = new Dialog(Profile.this);
+							dialog.setContentView(R.layout.dialog_see_files);
+							TextView title = dialog.findViewById(R.id.folder_name);
+							title.setText("Carpetas disponibles");
+							final ArrayList<String> foldersArray = new ArrayList<>(map.keySet());
+							AEArrayAdapter adapter = new AEArrayAdapter(Profile.this, android.R.layout.simple_list_item_1, foldersArray);
+							ListView folders_list = dialog.findViewById(R.id.files_list);
+							folders_list.setAdapter(adapter);
+							folders_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+								@Override
+								public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+									selectedFolder = foldersArray.get(i);
+									Intent intent = new Intent(Profile.this, Recursos.class);
+									intent.putExtra("isFS", true);
+									//intent.putExtra("folderName", selectedFolder);
+									intent.putStringArrayListExtra("lista", map.get(selectedFolder));
+									intent.putExtra("listener", true);
+									intent.putExtra("sendTo", sendTo);
+									startActivityForResult(intent, 2);
+								}
+							});
+							dialog.show();
+						}
+					});
+				}
+				// Si no tengo permitido el acceso se muestra un mensaje:
+				else
+					Profile.this.runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							Toast.makeText(Profile.this, "No puedes ver las carpetas", Toast.LENGTH_SHORT).show();
+						}
+					});
+			}
+		}
+		catch (JSONException e){
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * Devuelve las carpetas a las que tiene acceso el usuario que hace la petición.
+	 */
+	private HashMap<String,ArrayList<String>> getFriendAllowedFolders(String user){
+		HashMap<String,ArrayList<String>> result = new HashMap<>();
+		Iterator it = foldersAccess.entrySet().iterator();
+
+		while (it.hasNext()){
+			Map.Entry item = (Map.Entry) it.next();
+			ArrayList users = (ArrayList<String>) item.getValue();
+			if (users.contains(user)){
+				String folder = (String) item.getKey();
+				result.put(folder, sharedFolders.get(folder));
+			}
+		}
+
+		return result;
 	}
 
 
@@ -981,10 +1151,23 @@ public class Profile extends AppCompatActivity {
 					handleRA(jsonMsg);
 				}else if(type.equals("SA")){
 					handleSA(jsonMsg);
-				}
+				}else if(type.equals("VSF")){
+					handleVSF(jsonMsg);
+				}/*else if(type.equals("SF")){
+					handleSF(jsonMsg);
+				}*/
 
 			} catch (JSONException e){
-				e.printStackTrace();
+				try{
+					String type = jsonMsg.getString(Utils.FOLDERSHARING_SPECIAL_CHARS + "type");
+					if (type.equals("SF")){
+						handleSF(jsonMsg);
+					}
+					else e.printStackTrace();
+				}
+				catch (JSONException e1) {
+					e1.printStackTrace();
+				}
 			}
 
 		}
@@ -1048,25 +1231,7 @@ public class Profile extends AppCompatActivity {
 		}
 	}
 
-	// Este cargaba como clave en el HashMap el nombre del amigo.
-	/*private void loadFoldersAccess(){
-		Cursor c = mDatabaseHelper.getData(DatabaseHelper.FOLDER_ACCESS_TABLE);
-		foldersAccess.clear();
-		String lastFriend = null;
-		ArrayList<String> al_folders = null;
 
-		while (c.moveToNext()){
-			String friend = c.getString(0);
-			String folder = c.getString(1);
-			//Si el usuario es distinto al anterior o es el primero se crea una nueva entrada:
-			if (!friend.equalsIgnoreCase(lastFriend)) {
-				al_folders = new ArrayList<>(4);
-				foldersAccess.put(friend, al_folders);
-			}
-			al_folders.add(folder);
-			lastFriend = friend;
-		}
-	}*/
 
 	@Override
 	protected void onDestroy(){

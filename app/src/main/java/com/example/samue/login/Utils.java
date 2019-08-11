@@ -22,6 +22,13 @@ public class Utils {
 	public static final String REQ_PREVIEW = "requestPreview";
 	public static final String PREVIEW_SENT = "previewSent";
 	public static final String CANCEL_DL = "cancelDl";
+	/*
+	 * Caracteres especiales para poder enviar el hashMap de las carpetas compartidas a las que tiene
+	 * acceso un usuario, junto a los identificadores habituales que estoy enviando en el json ('type',
+	 * 'SFallowed', 'foldersCount', y 'sendTo'). Está pensado para que sean fácilmente distinguibles
+	 * por el receptor y no sean confundidos con nombres de carpetas.
+	 */
+	public static final String FOLDERSHARING_SPECIAL_CHARS = "<--*_FS_*-->";
 
 
 	public static final ArrayList<String> EXTENSIONS = new ArrayList<>(

@@ -19,7 +19,6 @@ import java.util.Map;
 
 public class SharedFoldersActivity extends AppCompatActivity {
 
-	//private FoldersListAdapter adapter;
 	private SimpleAdapter adapter;
 	private ListView listView;
 	//Nombre de las carpetas, lista de archivos de cada una.
@@ -42,7 +41,7 @@ public class SharedFoldersActivity extends AppCompatActivity {
 		al_friends = (ArrayList<Friends>) intent.getSerializableExtra("friends");
 
 		loadFoldersNamesAndPrepareAdapter();
-		//adapter = new FoldersListAdapter(this, android.R.layout.simple_list_item_1, foldersNames);
+
 		listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {

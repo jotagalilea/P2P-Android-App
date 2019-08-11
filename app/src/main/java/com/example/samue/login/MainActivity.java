@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
                 final ProgressDialog progressDialog = new ProgressDialog(this);
                 progressDialog.setIndeterminate(true);
-                progressDialog.setMessage("Welcome Back " + usuario);
+                progressDialog.setMessage("Bienvenido/a de nuevo, " + usuario);
                 progressDialog.show();
 
 

@@ -185,7 +185,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	 * @return
 	 */
 	public boolean removeFriendsFromFolder(String folder, ArrayList<String> users){
-		//TODO: PROBAR QUE EL BORRADO FUNCIONE CORRECTAMENTE
 		SQLiteDatabase db = this.getWritableDatabase();
 		// Primero obtengo los id de los usuarios a eliminar:
 		String queryIDs = getUsersIDsQuery(users);

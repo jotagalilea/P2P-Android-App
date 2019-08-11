@@ -13,20 +13,20 @@
 
     <TextView
         android:id="@+id/accept_friend_tv"
-        android:text="Do you want to accept marcoaurelio as a friend?"
-        android:textSize="15sp"
-        android:layout_gravity="center"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="-15dp"/>
+        android:layout_gravity="center"
+        android:layout_marginTop="-15dp"
+        android:text="¿Aceptas a Manuel como amigo?"
+        android:textSize="15sp" />
 
     <TextView
-        android:text="Friend Request"
-        android:textSize="20sp"
-        android:layout_gravity="center"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="-60dp"/>
+        android:layout_gravity="center"
+        android:layout_marginTop="-60dp"
+        android:text="Petición de amistad"
+        android:textSize="20sp" />
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -54,10 +54,10 @@
             android:layout_gravity="center"
             android:layout_marginEnd="11dp"
             android:layout_marginRight="11dp"
-            android:layout_toLeftOf="@+id/accept_friend_no"
             android:layout_toStartOf="@+id/accept_friend_no"
+            android:layout_toLeftOf="@+id/accept_friend_no"
             android:background="@drawable/buttonstyle"
-            android:text="Yes"
+            android:text="sí"
             android:textColor="@color/black" />
 
     </RelativeLayout>

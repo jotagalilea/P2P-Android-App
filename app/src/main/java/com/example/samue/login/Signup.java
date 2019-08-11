@@ -69,7 +69,7 @@ public class Signup extends AppCompatActivity {
 
         final ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setIndeterminate(true);
-        progressDialog.setMessage("Authenticating...");
+        progressDialog.setMessage("Autenticando...");
         progressDialog.show();
 
         new android.os.Handler().postDelayed(
@@ -87,7 +87,7 @@ public class Signup extends AppCompatActivity {
     }
 
     public void onSignUpFailed(){
-        Toast.makeText(getBaseContext(), "Sign up failed. Try again", Toast.LENGTH_LONG).show();
+        Toast.makeText(getBaseContext(), "Registro fallido. Prueba de nuevo", Toast.LENGTH_LONG).show();
         cabutton.setEnabled(true);
     }
 
@@ -133,21 +133,21 @@ public class Signup extends AppCompatActivity {
         String pw2 = confirmpass.getText().toString();
 
         if(userName.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(userName).matches()){
-            user.setError("enter a valid username");
+            user.setError("Introduzca un nombre válido");
             valid = false;
         }else{
             user.setError(null);
         }
 
         if(pw.isEmpty()){
-            pass.setError("password cannot be empty");
+            pass.setError("La contraseña no puede estar vacía");
             valid = false;
         }else{
             pass.setError(null);
         }
 
         if(pw2.isEmpty() || !pw2.equals(pw)){
-            confirmpass.setError("password doesn't match");
+            confirmpass.setError("Las contraseñas no coinciden");
             valid = false;
         }
 

@@ -83,7 +83,7 @@ public class ArchiveExplorer extends AppCompatActivity {
 							mdialog.dismiss();
 							final ProgressDialog progressDialog = new ProgressDialog(ArchiveExplorer.this);
 							progressDialog.setIndeterminate(true);
-							progressDialog.setMessage("uploading " + name + "...");
+							progressDialog.setMessage("Subiendo " + name + "...");
 							progressDialog.show();
 
 							new android.os.Handler().postDelayed(new Runnable() {

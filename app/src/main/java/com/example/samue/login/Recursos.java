@@ -32,6 +32,12 @@ public class Recursos extends AppCompatActivity {
 
 		boolean listener = extras.getBoolean("listener");
 		final String sendTo = extras.getString("sendTo");
+		final boolean isFS = extras.getBoolean("isFS", false);
+		final String folderName;
+		if (isFS)
+			folderName = extras.getString("folderName");
+		else
+			folderName = null;
 
 		if(listener){
 			shared.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -67,6 +73,8 @@ public class Recursos extends AppCompatActivity {
 							resultado.putExtra("name", name);
 							resultado.putExtra("sendTo", sendTo);
 							resultado.putExtra(Utils.REQ_PREVIEW, true);
+							if (isFS)
+								resultado.putExtra("folderName", folderName);
 							setResult(RESULT_OK, resultado);
 							finish();
 						}
@@ -81,6 +89,8 @@ public class Recursos extends AppCompatActivity {
 							resultado.putExtra("name", name);
 							resultado.putExtra("sendTo", sendTo);
 							resultado.putExtra(Utils.REQ_PREVIEW, false);
+							if (isFS)
+								resultado.putExtra("folderName", folderName);
 							setResult(RESULT_OK, resultado);
 							finish();
 						}
@@ -98,7 +108,7 @@ public class Recursos extends AppCompatActivity {
 					mdialog.show();
 
 					TextView tv = (TextView) mdialog.findViewById(R.id.confirm_archive_tv);
-					tv.setText("Do you want to erase " + name + "?");
+					tv.setText("¿Quieres borrar " + name + "?");
 
 					Button yes = mdialog.findViewById(R.id.confirm_archive_yes);
 					Button no = mdialog.findViewById(R.id.confirm_archive_no);
