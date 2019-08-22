@@ -1,16 +1,13 @@
 package com.example.samue.login;
 
 import android.content.Context;
-import android.support.v4.util.ArraySet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * Created by jotagalilea on 13/06/2019.

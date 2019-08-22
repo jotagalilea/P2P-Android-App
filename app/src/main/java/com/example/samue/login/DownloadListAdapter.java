@@ -12,6 +12,8 @@ import java.util.ArrayList;
 
 /**
  * Created by jotagalilea on 14/03/2019.
+ *
+ * Adaptador para mostrar la lista de descargas en DownloadManagerActivity.
  */
 public class DownloadListAdapter extends ArrayAdapter {
 

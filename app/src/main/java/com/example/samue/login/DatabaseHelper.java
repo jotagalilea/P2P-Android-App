@@ -35,8 +35,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	//Tabla con las carpetas compartidas a las que tiene acceso cada usuario.
 	static final String FOLDER_ACCESS_TABLE = "folder_access";
-	//private static final String FOLDER_ACCESS_COL1 = "userid";
-	//private static final String FOLDER_ACCESS_COL2 = "folder";
 	private static final String FOLDER_ACCESS_COL1 = "folder";
 	private static final String FOLDER_ACCESS_COL2 = "userid";
 
@@ -62,10 +60,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String createTable1 = "CREATE TABLE " +FRIENDS_TABLE_NAME+ "(" +FRIENDS_COL1+ " INTEGER PRIMARY KEY AUTOINCREMENT, " +FRIENDS_COL2+ " TEXT);";
 		String createTable2 = "CREATE TABLE " +BLOCKED_TABLE_NAME+ "(" +BLOCKED_COL1+ " INTEGER PRIMARY KEY AUTOINCREMENT, " +BLOCKED_COL2+ " TEXT);";
 		String createTable3 = "CREATE TABLE " +SHARED_FOLDERS_TABLE+ "(" +SHARED_FOLDERS_COL1+ " TEXT PRIMARY KEY, " +SHARED_FOLDERS_COL2+ " TEXT);";
-		/*String createTable4 = "CREATE TABLE " +FOLDER_ACCESS_TABLE+ "(" +FOLDER_ACCESS_COL1+ " INTEGER, " +FOLDER_ACCESS_COL2+ " TEXT, " +
-				"FOREIGN KEY (" +FOLDER_ACCESS_COL1+ ") REFERENCES " +FRIENDS_TABLE_NAME+" (" +FRIENDS_COL1+ ")," +
-				"FOREIGN KEY (" +FOLDER_ACCESS_COL2+ ") REFERENCES " +SHARED_FOLDERS_TABLE+ " (" +SHARED_FOLDERS_COL1+ "));";
-		*/
 		String createTable4 = "CREATE TABLE " +FOLDER_ACCESS_TABLE+ "(" +FOLDER_ACCESS_COL1+ " TEXT, " +FOLDER_ACCESS_COL2+ " INTEGER, " +
 				"FOREIGN KEY (" +FOLDER_ACCESS_COL1+ ") REFERENCES " +SHARED_FOLDERS_TABLE+ " (" +SHARED_FOLDERS_COL1+ ")," +
 				"FOREIGN KEY (" +FOLDER_ACCESS_COL2+ ") REFERENCES " +FRIENDS_TABLE_NAME+" (" +FRIENDS_COL1+ "));";
@@ -114,6 +108,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			return true;
 	}
 
+	/**
+	 * Añade una carpeta compartida a la base de datos junto con la lista de ficheros que contiene.
+	 * @param folder Nombre de la carpeta
+	 * @param files Lista de ficheros en un String.
+	 * @return true si ha tenido éxito, false en caso contrario.
+	 */
 	public boolean addSharedFolder(String folder, String files){
 		SQLiteDatabase db = this.getWritableDatabase();
 		ContentValues contentValues = new ContentValues();
@@ -182,7 +182,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	 * Borra amigos de la tabla de acceso a una carpeta.
 	 * @param folder
 	 * @param users
-	 * @return
+	 * @return true si ha tenido éxito, false en caso contrario.
 	 */
 	public boolean removeFriendsFromFolder(String folder, ArrayList<String> users){
 		SQLiteDatabase db = this.getWritableDatabase();
@@ -214,8 +214,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	/**
 	 * Borra una carpeta compartida.
-	 * @param folder
-	 * @return
+	 * @param folder Nombre de la carpeta.
+	 * @return true si ha tenido éxito, false en caso contrario.
 	 */
 	public boolean removeSharedFolder(String folder){
 		SQLiteDatabase db = this.getWritableDatabase();
@@ -232,10 +232,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	/**
 	 * Método para eliminar datos de las tablas FRIENDS_TABLE_NAME o bien BLOCKED_TABLE_NAME.
-	 *
 	 * @param name String con el nombre del eliminado.
 	 * @param table Tabla seleccionada.
-	 * @return true si tiene éxito.
+	 * @return true si ha tenido éxito, false en caso contrario.
 	 */
     public boolean removeData(String name, String table){
 		SQLiteDatabase db = this.getWritableDatabase();
@@ -252,7 +251,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	/**
 	 * Método para obtener un cursor a los datos de la tabla indicada.
-	 *
 	 * @param table Tabla seleccionada.
 	 * @return
 	 */
@@ -266,8 +264,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	/**
 	 * Obtiene el nombre de un usuario dado su id.
-	 * @param id
-	 * @return
+	 * @param id Identificador.
+	 * @return Nombre del usuario cuyo id coincide.
 	 */
 	public String getUserName(int id){
 		SQLiteDatabase db = this.getWritableDatabase();
@@ -278,6 +276,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	}
 
 
+	/**
+	 * Obtiene los datos de las carpetas compartidas en forma de hashMap.
+	 * @return Carpetas compartidas.
+	 */
 	public HashMap<String,ArrayList<String>> getSharedFolders(){
 		HashMap<String, ArrayList<String>> result = new HashMap<>();
 		SQLiteDatabase db = this.getWritableDatabase();
@@ -294,6 +296,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	}
 
 
+	/**
+	 * Obtiene los datos de la tabla de acceso a las carpetas compartidas.
+	 * @return Nombres de carpetas y usuarios con acceso.
+	 */
 	public HashMap<String,ArrayList<String>> getFoldersAccess(){
 		HashMap<String, ArrayList<String>> result = new HashMap<>();
 		SQLiteDatabase db = this.getWritableDatabase();
@@ -317,8 +323,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		}
 		return result;
 	}
-
-
 
 
 }

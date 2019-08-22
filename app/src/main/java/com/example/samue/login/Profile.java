@@ -12,7 +12,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
 import android.os.IBinder;
-import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -88,7 +87,8 @@ public class Profile extends AppCompatActivity {
 	static PnRTCClient pnRTCClient;
 	private Pubnub mPubNub;
 	public String username;
-	private FileSender fileSender;
+	private FileSender activeFileSender;
+	private SendersManager sendersManager;
 	boolean sendingFile;
 	ProgressDialog pd;
 	private DownloadService downloadService;
@@ -120,9 +120,9 @@ public class Profile extends AppCompatActivity {
 		loadBlockedUsersList();
 		loadSharedFolders();
 		loadFoldersAccess();
-		//blockedUsersHelper = new BlockedUsersHelper(this);
 		mArchivesDatabase = new ArchivesDatabase(this);
 		friends_list = (ListView) findViewById(R.id.friends_list);
+		sendersManager = SendersManager.getSingleton();
 
 		populateListView();
 
@@ -138,6 +138,7 @@ public class Profile extends AppCompatActivity {
 				Button seeFilesButton = mdialog.findViewById(R.id.seefriendfilesButton);
 				Button seeFriendSFButton = mdialog.findViewById(R.id.seefriendSFButton);
 
+				// Ver archivos compartidos por el amigo seleccionado.
 				seeFilesButton.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -147,6 +148,7 @@ public class Profile extends AppCompatActivity {
 					}
 				});
 
+				// Borrar amigo.
 				deleteButton.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -157,6 +159,7 @@ public class Profile extends AppCompatActivity {
 					}
 				});
 
+				// Ver carpetas compartidas con este dispositivo por el amigo seleccionado.
 				seeFriendSFButton.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View view) {
@@ -176,6 +179,7 @@ public class Profile extends AppCompatActivity {
 
 		fab = (FloatingActionButton) findViewById(R.id.addFriendsFAB);
 
+		// Botón para compartir un archivo o una carpeta.
 		fab.setOnClickListener(new View.OnClickListener() { //TODO debe subir al fichero interno el path del archivo que elije
 			@Override
 			public void onClick(View v) {
@@ -186,6 +190,7 @@ public class Profile extends AppCompatActivity {
 		});
 		initPubNub();
 
+		// Arranque del servicio de descargas.
 		dl_intent = new Intent(this, DownloadService.class);
 		startService(dl_intent);
 		serviceBound = bindService(dl_intent, serviceConnection, BIND_AUTO_CREATE);
@@ -291,7 +296,7 @@ public class Profile extends AppCompatActivity {
 					}
 				}
 				break;
-			case BLOCKED_USERS_REQUEST: //Caso para cuando se vuelve de ver los usuarios bloqueados. Hay que recargar la lista.
+			case BLOCKED_USERS_REQUEST: // Caso para cuando se vuelve de ver los usuarios bloqueados. Hay que recargar la lista.
 				if(resultCode == Activity.RESULT_OK){
 					al_blocked_users.clear();
 					al_blocked_users = (ArrayList<Friends>) data.getSerializableExtra("arrayBloqueados");
@@ -339,7 +344,6 @@ public class Profile extends AppCompatActivity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.my_toolbar, menu);
-
 		return true;
 	}
 
@@ -511,20 +515,51 @@ public class Profile extends AppCompatActivity {
 	private void RA(String name, String sendTo, boolean isPreview){ //Request Archive
 		try{
 			JSONObject msg = new JSONObject();
+			final String finalName = name;
 			msg.put("type", "RA");
 			msg.put("sendTo", this.username);
 			msg.put(Utils.NAME, name);
 			msg.put(Utils.REQ_PREVIEW, isPreview);
+			// Útil para la descarga desde una carpeta compartida:
 			if (selectedFolder != null){
 				msg.put("selectedFolder", selectedFolder);
 				selectedFolder = null;
 			}
 
-			this.pnRTCClient.transmit(sendTo, msg);
+			/*
+			 * Si hay hilos de descarga disponibles se lanza.
+			 * si no, se añade a la cola y ya conectaré con el emisor.
+			 */
+			if (downloadService.hasFreeThreads()) {
+				Profile.this.runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						Toast.makeText(getApplicationContext(), "Descargando " + finalName, Toast.LENGTH_LONG).show();
+					}
+				});
+				pnRTCClient.transmit(sendTo, msg);
+			}
+			else{
+				downloadService.queueMsg(sendTo, msg);
+				Profile.this.runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						Toast.makeText(getApplicationContext(), finalName + " puesto en cola", Toast.LENGTH_LONG).show();
+					}
+				});
+			}
 		}catch(Exception e){
 			e.printStackTrace();
 		}
 	}
+
+
+
+	private void handleSA(JSONObject jsonMsg){
+		this.downloadService.handleMsg(jsonMsg);
+	}
+
+
 
 	private void handleRA(JSONObject jsonMsg){
 		try{
@@ -534,11 +569,10 @@ public class Profile extends AppCompatActivity {
 			} catch (JSONException e){
 				cancel_dl = false;
 			}
-
 			if (!cancel_dl){
-				final String userFR = jsonMsg.getString("sendTo");
-				// Si el usuario está bloqueado se desecha la petición silenciosamente.
-				if (!listContains(userFR, al_blocked_users)) {
+				final String user = jsonMsg.getString("sendTo");
+				// Si el usuario no está bloqueado se procede, en otro caso se desecha la petición silenciosamente.
+				if (!listContains(user, al_blocked_users)) {
 					String archive = jsonMsg.getString(Utils.NAME);
 					String sendTo = jsonMsg.getString("sendTo");
 					String folder;
@@ -571,7 +605,7 @@ public class Profile extends AppCompatActivity {
 					final boolean isPreview;
 					isPreview = jsonMsg.getBoolean(Utils.REQ_PREVIEW);
 					if (isPreview) {
-						// La cantidad de datos que se van a enviar dependerá del tipo de archivo:
+						// La cantidad de datos que se van a enviar para una previsualización dependerá del tipo de archivo:
 						String extension = archive.substring(archive.lastIndexOf('.') + 1).toLowerCase();
 						file = prepareCutDocument(path, extension);
 						previewSize = setPreviewSize(extension);
@@ -592,35 +626,34 @@ public class Profile extends AppCompatActivity {
 					msg.put(Utils.NEW_DL, true);
 
 
-					//TODO: Revisar:
-					/*
-					 * Antes de comenzar el bucle habría que mandar al amigo el mensaje de nueva descarga
-					 * con los datos necesarios y hasta que no reciba respuesta no entra en el while.
-					 * Si este dispositivo ya está enviando un archivo (hilo de envío ocupado) entonces hay que
-					 * decirle al amigo que no puede descargar el archivo de aquí. Entonces el amigo debe intentar
-					 * otra descarga que tenga en espera.
-					 */
-					//pnRTCClient.transmit(sendTo, msg);
-
-					// Voy a enviar 8 KB de datos en cada mensaje, codificado aumentará.
-					//TODO: Lo que sigue debería estar a la espera de que el amigo dé la señal en un hilo nuevo.
-
-					if (!sendingFile) {
+					// Si no se está enviando ningún archivo y no hay ningún hilo en cola se lanza el hilo de subida.
+					if (!sendingFile && sendersManager.isQueueEmpty()) {
 						sendingFile = true;
-						fileSender = new FileSender();
-						fileSender.setName("fileSender");
-						fileSender.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
-						fileSender.start();
+						activeFileSender = new FileSender();
+						activeFileSender.setName("fileSender");
+						activeFileSender.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
+						activeFileSender.start();
 					}
-					else{
-						//TODO: Falta que al recibir nueva petición de descarga se compruebe que no se esté mandando ya un fichero
-						//      en cuyo caso debería quedarse en una cola de espera. Estaría bien un mecanismo de seguridad
-						//      que impida el envío contínuo de ficheros.
+					// Si hay un hilo enviando un fichero y la cola no está llena se pone en cola.
+					else if (sendingFile && !sendersManager.queueFull()){
+						FileSender fs = new FileSender();
+						fs.setName("fileSenderQueued");
+						fs.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
+						sendersManager.addSender(archive, fs);
 					}
 				}
-				else{
-					fileSender.interrupt();
-					sendingFile = false;
+			}
+			else{
+				try{
+					String uploadFileName = jsonMsg.getString(Utils.NAME);
+					// Si la subida cancelada es la activa se para.
+					if (uploadFileName.equals(activeFileSender.getFileName()))
+						activeFileSender.stopUpload();
+					// Si está en cola se elimina.
+					else
+						sendersManager.removeSender(uploadFileName);
+				} catch (JSONException e){
+					e.printStackTrace();
 				}
 			}
 		}catch(Exception e){
@@ -629,12 +662,17 @@ public class Profile extends AppCompatActivity {
 	}
 
 
-
-
+	/**
+	 * Prepara el fichero que se va a enviar para ser previsualizado en el destino.
+	 * @param path Ruta del fichero.
+	 * @param extension Extensión o tipo.
+	 * @return Fichero de tamaño reducido.
+	 */
 	private File prepareCutDocument(String path, String extension){
 		File f;
 		final String preview = "_preview";
 		switch (extension){
+			// Si es un pdf se crea uno nuevo con 3 páginas.
 			case "pdf":
 				try {
 					f = new File(path);
@@ -662,6 +700,7 @@ public class Profile extends AppCompatActivity {
 					f = new File(path);
 				}
 				break;
+			// Si es una imagen de uno de los tipos soportados se crea otra de calidad reducida.
 			case "jpg":
 			case "jpeg":
 			case "png":
@@ -678,10 +717,11 @@ public class Profile extends AppCompatActivity {
 
 
 	/**
-	 * Crea una imagen de calidad reducida para la previsualización.
+	 * Crea una imagen de calidad reducida para la previsualización haciendo uso de las utilidades
+	 * de android para crear miniaturas.
 	 * @param path Ruta de la imagen.
 	 * @param ext Extensión de la imagen.
-	 * @return Imagen de menor calidad.
+	 * @return Archivo de imagen de menor calidad.
 	 */
 	private File createThumbnail(String path, String ext){
 		int width, height;
@@ -705,6 +745,7 @@ public class Profile extends AppCompatActivity {
 		}
 		return f;
 	}
+
 
 	/**
 	 * Cuando el usuario remoto quiere previsualizar un archivo hay que enviarle cierta cantidad de
@@ -731,11 +772,6 @@ public class Profile extends AppCompatActivity {
 			default: maxSize = 0;
 		}
 		return maxSize;
-	}
-
-
-	private void handleSA(JSONObject jsonMsg){
-		this.downloadService.handleMsg(jsonMsg);
 	}
 
 
@@ -822,7 +858,9 @@ public class Profile extends AppCompatActivity {
 			JSONObject msg = new JSONObject();
 			msg.put("type", "VAR"); //tipo de mensaje
 			msg.put("sendTo", this.username); //usuario para devolver mensaje con datos
-
+			// Parada necesaria para asegurar que se realiza bien la conexión desde un dispositivo lento,
+			// como por ejemplo desde un emulador:
+			Thread.sleep(1000);
 			this.pnRTCClient.transmit(sendTo, msg);
 		}catch(Exception e){
 			e.printStackTrace();
@@ -838,7 +876,7 @@ public class Profile extends AppCompatActivity {
 			JSONObject msg = new JSONObject();
 			msg.put("type", "VSF");
 			msg.put("sendTo", this.username);
-
+			Thread.sleep(1000);
 			this.pnRTCClient.transmit(sendTo, msg);
 		}catch(Exception e){
 			e.printStackTrace();
@@ -937,6 +975,7 @@ public class Profile extends AppCompatActivity {
 		}
 	}
 
+
 	/**
 	 * Maneja la respuesta a la petición de ver carpetas compartidas.
 	 */
@@ -983,7 +1022,6 @@ public class Profile extends AppCompatActivity {
 									selectedFolder = foldersArray.get(i);
 									Intent intent = new Intent(Profile.this, Recursos.class);
 									intent.putExtra("isFS", true);
-									//intent.putExtra("folderName", selectedFolder);
 									intent.putStringArrayListExtra("lista", map.get(selectedFolder));
 									intent.putExtra("listener", true);
 									intent.putExtra("sendTo", sendTo);
@@ -1030,10 +1068,11 @@ public class Profile extends AppCompatActivity {
 	}
 
 
+
 	/**
 	 * Hilo para el envío de 1 archivo.
 	 */
-	private class FileSender extends Thread {
+	public class FileSender extends Thread {
 		private long previewLength;
 		private JSONObject msg;
 		private String sendTo2;
@@ -1044,10 +1083,12 @@ public class Profile extends AppCompatActivity {
 		public void run() {
 			boolean lastPiece = false;
 			boolean firstPiece = true;
-			byte[] bFile = new byte[8192];
+			// Voy a enviar 16 KB de datos en cada mensaje, codificado aumentará.
+			byte[] bFile = new byte[16384];
 			int bytesRead;
 			int totalBytesRead = 0;
 			String s;
+			activeFileSender = this;
 			try {
 				while (!lastPiece) {
 					bytesRead = fis.read(bFile);
@@ -1061,12 +1102,9 @@ public class Profile extends AppCompatActivity {
 						lastPiece = (bytesRead < bFile.length);
 
 					msg.put(Utils.LAST_PIECE, lastPiece);
-
 					s = Base64.encodeToString(bFile, Base64.URL_SAFE);
 					msg.put(Utils.DATA, s);
-
 					pnRTCClient.transmit(sendTo2, msg);
-
 					msg.remove(Utils.DATA);
 					msg.remove(Utils.LAST_PIECE);
 
@@ -1084,12 +1122,24 @@ public class Profile extends AppCompatActivity {
 				fis.close();
 				pnRTCClient.closeConnection(sendTo2);
 				sendingFile = false;
+				// Se avisa al manager de que se ha terminado la subida y puede lanzar la siguiente en la cola, si existe:
+				sendersManager.notifyFinishedUpload();
 			} catch (Exception e){
 				e.printStackTrace();
 			}
 		}
 
 
+		/**
+		 * Método para inicializar las variables del hilo, es obligatorio llamarlo antes de
+		 * arrancar el hilo.
+		 * @param p Tamaño del fichero en caso de una previsualización, 0 si no lo es.
+		 * @param j Mensaje JSON.
+		 * @param s Nombre del destinatario.
+		 * @param f Fichero.
+		 * @param fiss Canal de transmisión de los datos del fichero para su lectura.
+		 * @param prev Determina si es un fichero de previsualización o no.
+		 */
 		public void setVariables(long p, JSONObject j, String s, File f, FileInputStream fiss, boolean prev){
 			previewLength = p;
 			msg = j;
@@ -1097,6 +1147,26 @@ public class Profile extends AppCompatActivity {
 			file2 = f;
 			fis = fiss;
 			isPreview = prev;
+		}
+
+		/**
+		 * Devuelve el nombre del fichero que se está descargando.
+		 * @return nombre del fichero.
+		 */
+		public String getFileName(){
+			return file2.getName();
+		}
+
+		/**
+		 * Detiene el envío actual e interrumpe el hilo.
+		 */
+		public void stopUpload(){
+			try{
+				fis.close();
+				this.interrupt();
+			} catch (IOException e){
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -1153,9 +1223,7 @@ public class Profile extends AppCompatActivity {
 					handleSA(jsonMsg);
 				}else if(type.equals("VSF")){
 					handleVSF(jsonMsg);
-				}/*else if(type.equals("SF")){
-					handleSF(jsonMsg);
-				}*/
+				}
 
 			} catch (JSONException e){
 				try{
@@ -1165,9 +1233,7 @@ public class Profile extends AppCompatActivity {
 					}
 					else e.printStackTrace();
 				}
-				catch (JSONException e1) {
-					e1.printStackTrace();
-				}
+				catch (JSONException e1) {}
 			}
 
 		}

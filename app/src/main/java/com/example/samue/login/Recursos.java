@@ -11,6 +11,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 import java.util.ArrayList;
@@ -43,7 +44,6 @@ public class Recursos extends AppCompatActivity {
 			shared.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 				@Override
 				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-					//Toast.makeText(Recursos.this, "has clickado " + listaNombresArchivos.get(position), Toast.LENGTH_SHORT).show();
 					final String name = listaNombresArchivos.get(position).toString();
 
 					mdialog = new Dialog(Recursos.this);
@@ -64,6 +64,12 @@ public class Recursos extends AppCompatActivity {
 						}
 					});
 
+					String ext = name.substring(name.lastIndexOf('.')+1);
+					if (!Utils.SUPPORTED_PREVIEW_FORMATS.contains(ext)) {
+						preview.setEnabled(false);
+						preview.setAlpha(.5f);
+					}
+
 					preview.setOnClickListener(new View.OnClickListener() {
 						@Override
 						public void onClick(View view) {
@@ -79,6 +85,7 @@ public class Recursos extends AppCompatActivity {
 							finish();
 						}
 					});
+
 
 					yes.setOnClickListener(new View.OnClickListener() {
 						@Override

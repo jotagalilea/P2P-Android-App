@@ -18,9 +18,7 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 public class ArchiveExplorer extends AppCompatActivity {
@@ -56,7 +54,6 @@ public class ArchiveExplorer extends AppCompatActivity {
 				// Si es un archivo se muestra un Toast con su nombre y si es un directorio
 				// se cargan los archivos que contiene en el listView
 				if (archivo.isFile()) {
-					//Toast.makeText(ArchiveExplorer.this, "Has seleccionado el archivo: " + archivo.getName(),Toast.LENGTH_LONG).show();
 					final String name = archivo.getName();
 					final String path = archivo.getPath();
 
@@ -141,7 +138,7 @@ public class ArchiveExplorer extends AppCompatActivity {
 										final Dialog addFriendsDl = new Dialog(ArchiveExplorer.this);
 										addFriendsDl.setContentView(R.layout.dialog_addfriendssharedfolder);
 
-										// Obtener lista de amigos:
+										// Obtener lista de amigos para elegir:
 										Intent intent = getIntent();
 										final ArrayList<Friends> friendsList = (ArrayList<Friends>) intent.getSerializableExtra("friendsList");
 										final ArrayList<String> friendsNames = Utils.getFriendsArrayListAsStrings(friendsList);
@@ -159,7 +156,7 @@ public class ArchiveExplorer extends AppCompatActivity {
 													// Se añade la carpeta con los nombres de los archivos que contiene a la BD, excluyendo '../':
 													ArrayList<String> sublist = new ArrayList<String>(listaNombresArchivos.subList(1,listaNombresArchivos.size()));
 													Profile.mDatabaseHelper.addSharedFolder(currentFolder, Utils.joinStrings(",",sublist));
-													// Se añaden los amigos seleccionados  la tabla de acceso:
+													// Se añaden los amigos seleccionados a la tabla de acceso:
 													boolean selected[] = fAdapter.getSelected();
 													ArrayList<String> friendsSelected = new ArrayList<>();
 													for (int i = 0; i < friendsList.size(); i++) {

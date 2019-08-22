@@ -12,6 +12,8 @@ import java.util.ArrayList;
 
 /**
  * Created by jotagalilea on 15/07/2019.
+ *
+ * Adaptador pensado para seleccionar elementos de un conjunto de amigos en una lista con checkboxes.
  */
 public class SelectFriends_Adapter extends ArrayAdapter {
 

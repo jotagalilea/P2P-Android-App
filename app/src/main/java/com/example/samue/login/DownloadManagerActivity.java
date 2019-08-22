@@ -64,18 +64,22 @@ public class DownloadManagerActivity extends AppCompatActivity {
 
 		Intent intent = getIntent();
 		Intent serviceIntent = intent.getParcelableExtra("downloadServiceIntent");
-		boolean bound = bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-		//System.out.print(bound);
+		bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 	}
 
 
+	/**
+	 * Prepara la actividad para su uso.
+	 *
+	 * Obtiene la lista de descargas del servicio, construye el adaptador, crea los listener, y prepara
+	 * el timer que actualizará la interfaz.
+	 */
 	private void prepareActivity(){
 		if (serviceBound) {
 			al_downloads = downloadService.getDownloads();
 			listAdapter = new DownloadListAdapter(getApplicationContext(), al_downloads);
 			dl_listView = findViewById(R.id.downloads_list);
 			dl_listView.setAdapter(listAdapter);
-
 			dl_listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 				@Override
 				public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -89,15 +93,22 @@ public class DownloadManagerActivity extends AppCompatActivity {
 						@Override
 						public void onClick(View view) {
 							dialog.dismiss();
-							//TODO: Mandar al amigo señal para parar, parar descarga interrumpiendo hilo, destruir fichero.
 							try {
 								JSONObject json = new JSONObject();
 								json.put("type", "RA");
+								json.put(Utils.NAME, dl.getFileName());
 								json.put(Utils.CANCEL_DL, true);
 								Profile.pnRTCClient.transmit(dl.getFriend(), json);
-								downloadService.stopDownload(dl.getPath(), dl.getFileName());
+								if (dl.isRunning()) {
+									downloadService.stopDownload(dl.getPath(), dl.getFileName());
+									dl.setStopped();
+									al_downloads.remove(dl);
+									dl.deleteFile();
+								}
 							}
-							catch (JSONException e){ e.printStackTrace(); }
+							catch (JSONException e){
+								e.printStackTrace();
+							}
 						}
 					});
 
@@ -121,8 +132,9 @@ public class DownloadManagerActivity extends AppCompatActivity {
 	}
 
 
-
-	// Va actualizando las descargas y notificando al adapter.
+	/**
+	 * Va notificando al adapter que se actualice con el estado de las descargas.
+	 */
 	private void updateGUI(){
 		this.runOnUiThread(new Runnable() {
 			@Override

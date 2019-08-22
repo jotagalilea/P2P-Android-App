@@ -17,6 +17,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ *  Created by jotagalilea on 17/07/2019.
+ *
+ *  Actividad que muestra las carpetas que se han compartido. Permite ver los amigos con acceso,
+ *  los archivos que contienen, y borrarlas si se eliminan todos los usuarios de alguna.
+ */
 public class SharedFoldersActivity extends AppCompatActivity {
 
 	private SimpleAdapter adapter;
@@ -72,8 +78,11 @@ public class SharedFoldersActivity extends AppCompatActivity {
 				seeUsers.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View view) {
-						// Se abre la actividad que permite ver, añadir o eliminar algún usuario
-						// de la lista de acceso a la carpeta seleccionada.
+						/*
+						 * Se abre la actividad que permite ver, añadir y eliminar algún usuario
+						 * de la lista de acceso a la carpeta seleccionada. Si se borran todos
+						 * entonces se elimina la carpeta de la aplicación.
+						 */
 						Intent intent = new Intent(SharedFoldersActivity.this, UsersSharedWithActivity.class);
 						intent.putExtra("folderName", folder_name);
 						intent.putExtra("users", foldersAccess.get(folder_name));
@@ -125,7 +134,7 @@ public class SharedFoldersActivity extends AppCompatActivity {
 
 
 	/**
-	 * Carga los datos de las carpetas compartidas en el adapter.
+	 * Carga los datos de las carpetas en el adapter.
 	 */
 	private void loadFoldersNamesAndPrepareAdapter(){
 		foldersNames = new ArrayList<>(sharedFolders.size());

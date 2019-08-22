@@ -10,14 +10,13 @@ import android.support.v4.util.Pair;
 import android.util.Base64;
 import android.webkit.MimeTypeMap;
 import android.widget.Toast;
-
+import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -40,6 +39,8 @@ public class DownloadService extends Service{
 	// HashMap con clave nombre del fichero y valor el par monitor del hilo y el hilo.
 	// Útil para el paso de los JSON entrantes al hilo que corresponda y controlar qué descargas están activas.
 	private HashMap<String, Pair<Object, ManagerThread.DownloadThread>> hm_downloads;
+	// Cola de mensajes para pedir archivos pensada para cuando no tengo hilos de descarga disponibles.
+	private ArrayDeque<Pair<String,JSONObject>> msgQueue;
 
 
 
@@ -49,6 +50,7 @@ public class DownloadService extends Service{
 		hm_downloads = new HashMap<>(2);
 		managerThread = new ManagerThread();
 		threadsRunning = 0;
+		msgQueue = new ArrayDeque<>();
 	}
 
 
@@ -65,6 +67,9 @@ public class DownloadService extends Service{
 		return binder;
 	}
 
+	public boolean hasFreeThreads(){
+		return (threadsRunning < MAX_DL_THREADS);
+	}
 
 	public void handleMsg(final JSONObject json){
 		synchronized (serviceMonitor){
@@ -75,7 +80,7 @@ public class DownloadService extends Service{
 	}
 
 
-	public void addDownload(Download d){
+	private void addDownload(Download d){
 		al_downloads.add(d);
 	}
 
@@ -87,6 +92,15 @@ public class DownloadService extends Service{
 
 	public boolean stopDownload(String dl_path, String dl_fileName){
 		return managerThread.stopDownload(dl_path, dl_fileName);
+	}
+
+	/**
+	 * Encola un mensaje para pedir un archivo.
+	 * @param sendTo nombre del amigo.
+	 * @param json	mensaje json.
+	 */
+	public void queueMsg(String sendTo, JSONObject json){
+		msgQueue.add(new Pair<>(sendTo, json));
 	}
 
 
@@ -117,21 +131,28 @@ public class DownloadService extends Service{
 				timer.schedule(new TimerTask() {
 					@Override
 					public void run() {
-						//TODO: Probar esto para cuando llega una tercera descarga y termina una activa.
-						//TODO: Quizá sea mejor hacerlo con un avisador para cuando termine la activa.
-						if ((threadsRunning<MAX_DL_THREADS) && (al_downloads.size()>1)){
-							boolean dl_found = false;
+						if (hasFreeThreads() && !msgQueue.isEmpty()){
+							/* Si hay hilos disponibles se coge uno de los mensajes de petición de archivo
+							 * previamente preparado y se transmite.
+							 */
+							Pair<String,JSONObject> p = msgQueue.poll();
+							String sendTo = p.first;
+							JSONObject msg = p.second;
+							Profile.pnRTCClient.transmit(sendTo, msg);
+							/*boolean dl_found = false;
 							Download d = null;
 							Iterator<Download> it = al_downloads.iterator();
+							// Busca una descarga parada y no terminada:
 							while (it.hasNext() && !dl_found){
 								d = it.next();
-								dl_found = !d.isRunning();
+								dl_found = !d.isRunning() && !d.isFinished();
 							}
-							// Si se encuentra se lanza.
+							// Si se encuentra se lanza:
 							if (dl_found) {
 								dl = d;
 								startDownload();
 							}
+							*/
 						}
 					}
 				}, 10010, 10010);
@@ -167,7 +188,7 @@ public class DownloadService extends Service{
 						}
 
 						// Si hay hilos disponibles...
-						if (threadsRunning < MAX_DL_THREADS){
+						if (hasFreeThreads()){
 							// Si es nueva descarga se lanza.
 							if (newDownload)
 								startDownload();
@@ -204,7 +225,6 @@ public class DownloadService extends Service{
 			DownloadThread th = dl_pair.second;
 
 			synchronized (dl_monitor) {
-				//Puede que meter el json así en el hilo no sea necesario.
 				th.setJSON(jsonMsg);
 				dl_monitor.notify();
 			}
@@ -222,8 +242,7 @@ public class DownloadService extends Service{
 			++threadsRunning;
 			dl_th.start();
 			// TODO: Falta avisar aquí al amigo para que comience la transferencia.
-			// Quizá no hace falta y ese trabajo ya lo hace pubnub.
-			/*try{
+			try{
 				JSONObject signal = new JSONObject();
 				signal.put(Utils.BEGIN, true);
 				Profile.pnRTCClient.transmit(dl.getFriend(), signal);
@@ -233,11 +252,16 @@ public class DownloadService extends Service{
 				--threadsRunning;
 				hm_downloads.remove(dl.getFileName());
 				dl.setStopped();
-			}*/
+			}
 		}
 
 
-
+		/**
+		 * Para una descarga activa.
+		 * @param dl_path Ruta del archivo.
+		 * @param dl_fileName Nombre del archivo.
+		 * @return
+		 */
 		public boolean stopDownload(String dl_path, String dl_fileName){
 			Pair<Object,ManagerThread.DownloadThread> dl_Pair = hm_downloads.get(dl_fileName);
 			Object monitor = dl_Pair.first;
@@ -287,11 +311,6 @@ public class DownloadService extends Service{
 			@Override
 			public void run(){
 				try{
-					/*String path = Environment.getExternalStorageDirectory().getPath() + "/P2PArchiveSharing/";
-					File file = new File(path);
-					if(!file.isDirectory())
-						file.mkdirs();
-					*/
 					name = jsonMsg.getString(Utils.NAME);
 					String path = dl.getPath();
 					fos = new FileOutputStream(path);
@@ -306,6 +325,7 @@ public class DownloadService extends Service{
 						}
 					}, 1000, 1000);
 
+					// Código que gestiona la descarga:
 					while (!lastPiece){
 						synchronized (dl_monitor){
 							while (!newJson)
@@ -321,6 +341,11 @@ public class DownloadService extends Service{
 							if (lastPiece) {
 								fos.close();
 								dl_timer.cancel();
+								dl_timer.purge();
+								bytesWritten = (int) dl.getSize();
+								storedLastSecond = 0;
+								updateDownload();
+								dl.setStopped();
 								hm_downloads.remove(dl.getFileName());
 								--threadsRunning;
 							}
@@ -342,10 +367,12 @@ public class DownloadService extends Service{
 							Toast.makeText(getApplicationContext(), "No handler for this type of file.", Toast.LENGTH_LONG).show();
 						}
 					}
-					//String completed = "Descargado " + name;
-					//Toast.makeText(getApplicationContext(), completed, Toast.LENGTH_LONG).show();
+
+					this.interrupt();
 				} catch(Exception e){
 					e.printStackTrace();
+					dl_timer.cancel();
+					this.interrupt();
 				}
 			}
 

@@ -14,6 +14,11 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+/**
+ * Created by jotagalilea on 20/07/2019.
+ *
+ * Actividad que permite gestionar (ver, añadir, y eliminar) los usuarios que tienen acceso a una carpeta compartida.
+ */
 public class UsersSharedWithActivity extends AppCompatActivity {
 
 	private DatabaseHelper helper;
@@ -57,7 +62,7 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 					dg.show();
 
 					final SelectFriends_Adapter adap = new SelectFriends_Adapter(UsersSharedWithActivity.this, remainingFriends);
-					ListView dg_list = dg.findViewById(R.id.friends_list);
+					ListView dg_list = dg.findViewById(R.id.select_friends_list);
 					dg_list.setAdapter(adap);
 
 					Button addSelection = dg.findViewById(R.id.button_add_selected);
@@ -90,7 +95,6 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 		removeFriendsFAB.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View view) {
-				// TODO: Podría meter un diálogo de confirmación.
 				if (adapter.getCountSelected() > 0) {
 					boolean[] selected = adapter.getSelected();
 					for (int i = 0; i < selected.length; i++) {
@@ -116,7 +120,7 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 
 	/**
 	 * Obtiene una lista con los amigos que aún no hayan sido añadidos a la carpeta.
-	 * @return
+	 * @return lista de los "restantes".
 	 */
 	private ArrayList<String> getRemainingFriends(){
 		int size = al_friends.size() - usersWithAccess.size();
