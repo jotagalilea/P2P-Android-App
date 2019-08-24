@@ -34,7 +34,7 @@ public class Utils {
 	public static final ArrayList<String> EXTENSIONS = new ArrayList<>(
 		Arrays.asList("txt","pdf","mp3","mp4","zip","doc","ppt","html","css","xls","jpg","png","csv","avi")
 	);
-	
+
 	public static final ArrayList<String> SUPPORTED_PREVIEW_FORMATS = new ArrayList<>(
 		Arrays.asList("txt","pdf","mp3","jpg","png")
 	);

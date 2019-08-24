@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
@@ -11,6 +12,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
+import android.net.ConnectivityManager;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -94,6 +96,7 @@ public class Profile extends AppCompatActivity {
 	private DownloadService downloadService;
 	private Intent dl_intent;
 	private boolean serviceBound = false;
+	private boolean mobileDataBlocked;
 	private ServiceConnection serviceConnection = new ServiceConnection(){
 		@Override
 		public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -114,6 +117,7 @@ public class Profile extends AppCompatActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_profile);
 		sendingFile = false;
+		mobileDataBlocked = false;
 		this.username = getIntent().getExtras().getString("user");
 		al_blocked_users = new ArrayList<>();
 		mDatabaseHelper = new DatabaseHelper(this);
@@ -208,6 +212,13 @@ public class Profile extends AppCompatActivity {
 				public void successCallback(String channel, Object message) { //conectamos nosotros al otro
 					Log.d("MA-dCall", "SUCCESS: " + message.toString());
 					connectPeer(connectTo, true); //conectamos con el peer
+					/* Parada necesaria para asegurar que se realiza bien la conexión, ya sea para esperar
+					 * el tráfico en caso de estar la red congestionada o bien para esperar la respuesta desde
+					 * un dispositivo lento.
+					 */
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {}
 
 					if(connectionType.equals("VAR")){ //buscamos que tipo de mensaje debemos enviar
 						VAR(connectTo);
@@ -349,6 +360,14 @@ public class Profile extends AppCompatActivity {
 
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
+			case R.id.block_upload_mobile:
+				mobileDataBlocked = !mobileDataBlocked;
+				if (mobileDataBlocked)
+					Toast.makeText(getApplicationContext(), "Ya no se comparten archivos con datos móviles", Toast.LENGTH_LONG).show();
+				else
+					Toast.makeText(getApplicationContext(), "Ahora se comparten archivos con datos móviles", Toast.LENGTH_LONG).show();
+				return true;
+
 			case R.id.see_shared_folders:
 				Intent sfIntent = new Intent(this, SharedFoldersActivity.class);
 				sfIntent.putExtra("friends", al_friends);
@@ -398,7 +417,7 @@ public class Profile extends AppCompatActivity {
 							removeBlockedDialog.show();
 
 							TextView title = removeBlockedDialog.findViewById(R.id.previous_blocked_friend_title);
-							title.setText("El usuario está bloqueado y se desbloqueará si continúas.\n¿Continuar?");
+							title.setText(fr + " está bloqueado y se desbloqueará si continúas.\n¿Continuar?");
 
 							Button yes = removeBlockedDialog.findViewById(R.id.unlock_yes);
 							yes.setOnClickListener(new View.OnClickListener() {
@@ -563,97 +582,101 @@ public class Profile extends AppCompatActivity {
 
 	private void handleRA(JSONObject jsonMsg){
 		try{
-			boolean cancel_dl;
-			try{
-				cancel_dl = jsonMsg.getBoolean(Utils.CANCEL_DL);
-			} catch (JSONException e){
-				cancel_dl = false;
-			}
-			if (!cancel_dl){
-				final String user = jsonMsg.getString("sendTo");
-				// Si el usuario no está bloqueado se procede, en otro caso se desecha la petición silenciosamente.
-				if (!listContains(user, al_blocked_users)) {
-					String archive = jsonMsg.getString(Utils.NAME);
-					String sendTo = jsonMsg.getString("sendTo");
-					String folder;
-					try{
-						folder = jsonMsg.getString("selectedFolder");
-					} catch (JSONException e){
-						folder = null;
-					}
-
-					String path;
-					if (folder != null) {
-						path = folder + '/' + archive;
-					}
-					else {
-						Cursor c = this.mArchivesDatabase.getData(archive);
-						c.moveToNext();
-						path = c.getString(1);
-						c.close();
-					}
-
-
-					JSONObject msg = new JSONObject();
-					msg.put(Utils.FRIEND_NAME, this.username);
-					msg.put("type", "SA");
-					msg.put(Utils.NAME, archive);
-
-					File file;
-					final FileInputStream fis;
-					long previewSize = 0;
-					final boolean isPreview;
-					isPreview = jsonMsg.getBoolean(Utils.REQ_PREVIEW);
-					if (isPreview) {
-						// La cantidad de datos que se van a enviar para una previsualización dependerá del tipo de archivo:
-						String extension = archive.substring(archive.lastIndexOf('.') + 1).toLowerCase();
-						file = prepareCutDocument(path, extension);
-						previewSize = setPreviewSize(extension);
-						if (previewSize > 0)
-							file = new File(path);
-						else
-							previewSize = file.length();
-						msg.put(Utils.PREVIEW_SENT, true);
-					} else {
-						file = new File(path);
-						msg.put(Utils.PREVIEW_SENT, false);
-					}
-
-					fis = new FileInputStream(file);
-					int fileLength = (int) file.length();
-
-					msg.put(Utils.FILE_LENGTH, fileLength);
-					msg.put(Utils.NEW_DL, true);
-
-
-					// Si no se está enviando ningún archivo y no hay ningún hilo en cola se lanza el hilo de subida.
-					if (!sendingFile && sendersManager.isQueueEmpty()) {
-						sendingFile = true;
-						activeFileSender = new FileSender();
-						activeFileSender.setName("fileSender");
-						activeFileSender.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
-						activeFileSender.start();
-					}
-					// Si hay un hilo enviando un fichero y la cola no está llena se pone en cola.
-					else if (sendingFile && !sendersManager.queueFull()){
-						FileSender fs = new FileSender();
-						fs.setName("fileSenderQueued");
-						fs.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
-						sendersManager.addSender(archive, fs);
-					}
+			// Primero se comprueba si se está conectado a Internet con datos móviles:
+			final ConnectivityManager connMgr = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+			boolean isUsingMobile = connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).isConnectedOrConnecting();
+			// En caso de que sí y se haya seleccionado que no se usen en la barra superior, se descarta la petición.
+			if (!isUsingMobile || !mobileDataBlocked) {
+				boolean cancel_dl;
+				try {
+					cancel_dl = jsonMsg.getBoolean(Utils.CANCEL_DL);
+				} catch (JSONException e) {
+					cancel_dl = false;
 				}
-			}
-			else{
-				try{
-					String uploadFileName = jsonMsg.getString(Utils.NAME);
-					// Si la subida cancelada es la activa se para.
-					if (uploadFileName.equals(activeFileSender.getFileName()))
-						activeFileSender.stopUpload();
-					// Si está en cola se elimina.
-					else
-						sendersManager.removeSender(uploadFileName);
-				} catch (JSONException e){
-					e.printStackTrace();
+				if (!cancel_dl) {
+					final String user = jsonMsg.getString("sendTo");
+					// Si el usuario no está bloqueado se procede, en otro caso se desecha la petición silenciosamente.
+					if (!listContains(user, al_blocked_users)) {
+						String archive = jsonMsg.getString(Utils.NAME);
+						String sendTo = jsonMsg.getString("sendTo");
+						String folder;
+						try {
+							folder = jsonMsg.getString("selectedFolder");
+						} catch (JSONException e) {
+							folder = null;
+						}
+
+						String path;
+						if (folder != null) {
+							path = folder + '/' + archive;
+						} else {
+							Cursor c = this.mArchivesDatabase.getData(archive);
+							c.moveToNext();
+							path = c.getString(1);
+							c.close();
+						}
+
+
+						JSONObject msg = new JSONObject();
+						msg.put(Utils.FRIEND_NAME, this.username);
+						msg.put("type", "SA");
+						msg.put(Utils.NAME, archive);
+
+						File file;
+						final FileInputStream fis;
+						long previewSize = 0;
+						final boolean isPreview;
+						isPreview = jsonMsg.getBoolean(Utils.REQ_PREVIEW);
+						if (isPreview) {
+							// La cantidad de datos que se van a enviar para una previsualización dependerá del tipo de archivo:
+							String extension = archive.substring(archive.lastIndexOf('.') + 1).toLowerCase();
+							file = prepareCutDocument(path, extension);
+							previewSize = setPreviewSize(extension);
+							if (previewSize > 0)
+								file = new File(path);
+							else
+								previewSize = file.length();
+							msg.put(Utils.PREVIEW_SENT, true);
+						} else {
+							file = new File(path);
+							msg.put(Utils.PREVIEW_SENT, false);
+						}
+
+						fis = new FileInputStream(file);
+						int fileLength = (int) file.length();
+
+						msg.put(Utils.FILE_LENGTH, fileLength);
+						msg.put(Utils.NEW_DL, true);
+
+
+						// Si no se está enviando ningún archivo y no hay ningún hilo en cola se lanza el hilo de subida.
+						if (!sendingFile && sendersManager.isQueueEmpty()) {
+							sendingFile = true;
+							activeFileSender = new FileSender();
+							activeFileSender.setName("fileSender");
+							activeFileSender.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
+							activeFileSender.start();
+						}
+						// Si hay un hilo enviando un fichero y la cola no está llena se pone en cola.
+						else if (sendingFile && !sendersManager.queueFull()) {
+							FileSender fs = new FileSender();
+							fs.setName("fileSenderQueued");
+							fs.setVariables(previewSize, msg, sendTo, file, fis, isPreview);
+							sendersManager.addSender(archive, fs);
+						}
+					}
+				} else {
+					try {
+						String uploadFileName = jsonMsg.getString(Utils.NAME);
+						// Si la subida cancelada es la activa se para.
+						if (uploadFileName.equals(activeFileSender.getFileName()))
+							activeFileSender.stopUpload();
+							// Si está en cola se elimina.
+						else
+							sendersManager.removeSender(uploadFileName);
+					} catch (JSONException e) {
+						e.printStackTrace();
+					}
 				}
 			}
 		}catch(Exception e){
@@ -858,9 +881,6 @@ public class Profile extends AppCompatActivity {
 			JSONObject msg = new JSONObject();
 			msg.put("type", "VAR"); //tipo de mensaje
 			msg.put("sendTo", this.username); //usuario para devolver mensaje con datos
-			// Parada necesaria para asegurar que se realiza bien la conexión desde un dispositivo lento,
-			// como por ejemplo desde un emulador:
-			Thread.sleep(1000);
 			this.pnRTCClient.transmit(sendTo, msg);
 		}catch(Exception e){
 			e.printStackTrace();
@@ -876,7 +896,6 @@ public class Profile extends AppCompatActivity {
 			JSONObject msg = new JSONObject();
 			msg.put("type", "VSF");
 			msg.put("sendTo", this.username);
-			Thread.sleep(1000);
 			this.pnRTCClient.transmit(sendTo, msg);
 		}catch(Exception e){
 			e.printStackTrace();

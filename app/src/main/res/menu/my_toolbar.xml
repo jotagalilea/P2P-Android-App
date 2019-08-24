@@ -21,7 +21,7 @@
     <item android:id="@+id/action_search"
         android:title="action_search"
         android:icon="@drawable/magnify"
-        app:showAsAction="ifRoom|collapseActionView"
+        app:showAsAction="always"
         app:actionViewClass="android.support.v7.widget.SearchView" />
 
     <item android:id="@+id/action_add_friend"
@@ -29,5 +29,11 @@
         android:icon="@drawable/plus"
         app:showAsAction="always"
         />
+
+    <item
+        android:id="@+id/block_upload_mobile"
+        android:icon="@drawable/upload"
+        android:title="action_block_upload_mobile"
+        app:showAsAction="always" />
 
 </menu>

@@ -162,18 +162,6 @@ public class DownloadService extends Service{
 					synchronized (serviceMonitor) {
 						while (!newMsgReceived)
 							serviceMonitor.wait();
-						//TODO: Revisar este comentario:
-						/*
-						 * Pasos:
-						 * 1. Recibir primer mensaje con NEW_DL solo con el nombre del fichero y el tamaño.
-						 * 2. Añadir nueva descarga a la cola.
-						 * 		2.1. Si hay hilos libres se arranca uno y se manda un mensaje al amigo para que comience la transferencia.
-						 * 		2.2. Si no ambos dispositivos se mantienen con el hilo parado hasta que queden un hilo de descarga libre.
-						 * 			 Entonces se avisa al amigo	con START (por ejemplo).
-						 * 			 El amigo que manda el archivo no tiene que hacer nada, sólo está esperando a recibir el aviso para
-						 * 			 comenzar.
-						 * 3. Cuando una descarga finalice comenzar otra en un hilo nuevo.
-						 */
 
 						name = jsonMsg.getString(Utils.NAME);
 						newDownload = jsonMsg.getBoolean(Utils.NEW_DL);
@@ -241,7 +229,6 @@ public class DownloadService extends Service{
 			dl_th.setName("DownloaderThread_" + threadsRunning);
 			++threadsRunning;
 			dl_th.start();
-			// TODO: Falta avisar aquí al amigo para que comience la transferencia.
 			try{
 				JSONObject signal = new JSONObject();
 				signal.put(Utils.BEGIN, true);

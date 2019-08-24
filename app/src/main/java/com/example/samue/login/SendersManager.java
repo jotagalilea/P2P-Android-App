@@ -47,12 +47,10 @@ public class SendersManager extends Thread {
 				try{
 					while (!newUpload)
 						monitor.wait();
-
 					if (!sendersQueue.isEmpty()){
 						Iterator it = sendersQueue.entrySet().iterator();
 						Map.Entry data = (Map.Entry) it.next();
 						FileSender fs = (FileSender) data.getValue();
-						// TODO: ¿Falta avisar al amigo y esperar su respuesta?
 						fs.start();
 					}
 					newUpload = false;
