@@ -1,24 +1,77 @@
 <resources>
     <string name="app_name">P2P Sharing</string>
-    <string name="button_yes">Sí</string>
-    <string name="button_no">No</string>
-    <string name="title_activity_login_successful">Logueado</string>
-    <string name="title_activity_blocked_users">Usuarios bloqueados</string>
-    <string name="title_activity_download_manager">Administrador de descargas</string>
-    <string name="download_item_filename">Download_item.file</string>
-    <string name="download_item_size">52.50 MB</string>
-    <string name="download_item_speed">250 KB/s</string>
-    <string name="download_item_eta">2h 20min 5s</string>
-    <string name="share_folder_title">Compartir carpeta</string>
-    <string name="share_folder_question">¿Quieres compartir la carpeta actual?\nNo se compartirán las carpetas anidadas</string>
-    <string name="what_to_do">¿Qué quieres hacer?</string>
-    <string name="see_users">Ver usuarios</string>
-    <string name="see_files">Ver archivos</string>
-    <string name="select_shared_folder_friends">Selecciona los amigos que quieres que tengan acceso:</string>
-    <string name="friend_name_example">Roberto Mendoza</string>
-    <string name="see_shared_folders_title">Carpetas compartidas</string>
-    <string name="folder_name">Nombre carpeta</string>
-    <string name="users_shared_with_title">Amigos con acceso</string>
+    <string name="title_activity_login_successful">LoginSuccessful</string>
+    <string name="title_activity_settings_activitytest">Settingstest</string>
 
+    <!-- Strings related to Settings -->
 
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+
+    <string name="pref_title_social_recommendations">Enable social recommendations</string>
+    <string name="pref_description_social_recommendations">Recommendations for people to contact
+        based on your message history
+    </string>
+
+    <string name="pref_title_display_name">Display name</string>
+    <string name="pref_default_display_name">John Smith</string>
+
+    <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
+    <string-array name="pref_example_list_titles">
+        <item>Always</item>
+        <item>When possible</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_example_list_values">
+        <item>1</item>
+        <item>0</item>
+        <item>-1</item>
+    </string-array>
+
+    <!-- Example settings for Data & Sync -->
+    <string name="pref_header_data_sync">Data &amp; sync</string>
+
+    <string name="pref_title_sync_frequency">Sync frequency</string>
+    <string-array name="pref_sync_frequency_titles">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>3 hours</item>
+        <item>6 hours</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_sync_frequency_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>180</item>
+        <item>360</item>
+        <item>-1</item>
+    </string-array>
+
+    <string-array name="list_preference_entries">
+        <item>Entry 1</item>
+        <item>Entry 2</item>
+        <item>Entry 3</item>
+    </string-array>
+
+    <string-array name="list_preference_entry_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="multi_select_list_preference_default_value" />
+
+    <string name="pref_title_system_sync_settings">System sync settings</string>
+
+    <!-- Example settings for Notifications -->
+    <string name="pref_header_notifications">Notifications</string>
+
+    <string name="pref_title_new_message_notifications">New message notifications</string>
+
+    <string name="pref_title_ringtone">Ringtone</string>
+    <string name="pref_ringtone_silent">Silent</string>
+
+    <string name="pref_title_vibrate">Vibrate</string>
 </resources>

@@ -28,10 +28,10 @@ public class CreateName extends AppCompatActivity {
         setContentView(R.layout.dialog_name);
 
 
-        confirmName = findViewById(R.id.button_confirm_name);
+        confirmName = (Button) findViewById(R.id.button_confirm_name);
 
 
-        name = findViewById(R.id.name);
+        name = (EditText) findViewById(R.id.name);
 
 
 
@@ -53,7 +53,7 @@ public class CreateName extends AppCompatActivity {
 
         final ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setIndeterminate(true);
-        progressDialog.setMessage("Bienvenido/a " + userName);
+        progressDialog.setMessage("Welcome " + userName);
         progressDialog.show();
 
         new android.os.Handler().postDelayed(
@@ -71,7 +71,7 @@ public class CreateName extends AppCompatActivity {
     }
 
     public void nameFailed(){
-        Toast.makeText(getBaseContext(), "Vacío. Prueba de nuevo", Toast.LENGTH_LONG).show();
+        Toast.makeText(getBaseContext(), "Empty Name. Try again", Toast.LENGTH_LONG).show();
         confirmName.setEnabled(true);
     }
 
@@ -102,7 +102,7 @@ public class CreateName extends AppCompatActivity {
 
 
         if(userName.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(userName).matches()){
-            name.setError("Introduzca un nombre de usuario válido");
+            name.setError("Enter a valid username");
             valid = false;
         }else{
             name.setError(null);
@@ -111,7 +111,7 @@ public class CreateName extends AppCompatActivity {
         File af = new File("/data/data/com.example.samue.login/files/nombre.txt");
         if(af.isFile()){
             valid = false;
-            name.setError("El usuario ya existe");
+            name.setError("User already exists");
         }else{
             new File("/data/data/com.example.samue.login/files/shared_stuff.txt");
             new File("/data/data/com.example.samue.login/files/archives_path.txt");
