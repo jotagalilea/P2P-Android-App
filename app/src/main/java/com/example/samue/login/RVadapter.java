@@ -37,7 +37,7 @@ import java.util.List;
 
     @Override
     public void onBindViewHolder(FriendViewHolder friendViewHolder, int i) {
-        friendViewHolder.name_friendgroup.setText(friends.get(i).nombre);
+        friendViewHolder.name_friendgroup.setText(friends.get(i).getNombre());
         friendViewHolder.img_friendgroup.setImageResource(friends.get(i).img);
     }
 
