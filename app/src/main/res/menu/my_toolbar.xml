@@ -2,12 +2,28 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <item
-        android:id="@+id/action_search"
-        android:icon="@drawable/magnify"
+    <item android:id="@+id/see_shared_archives"
+        android:title="Ver archivos compartidos"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/see_blocked_users"
+        android:title="Ver usuarios bloqueados"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/see_shared_folders"
+        android:title="Ver carpetas compartidas"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/see_downloads"
+        android:title="Descargas"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/action_search"
         android:title="action_search"
-        app:actionViewClass="android.support.v7.widget.SearchView"
-        app:showAsAction="ifRoom|collapseActionView" />
+        android:icon="@drawable/magnify"
+        app:showAsAction="always"
+        app:actionViewClass="android.support.v7.widget.SearchView" />
+
     <item
         android:id="@+id/crear"
         android:icon="@drawable/plus"
@@ -24,8 +40,9 @@
         </menu>
     </item>
     <item
-        android:id="@+id/see_shared_archives"
-        android:title="see shared files"
-        app:showAsAction="never" />
+        android:id="@+id/block_upload_mobile"
+        android:icon="@drawable/upload"
+        android:title="action_block_upload_mobile"
+        app:showAsAction="always" />
 
 </menu>

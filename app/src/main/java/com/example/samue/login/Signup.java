@@ -14,8 +14,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
-
 import java.io.File;
 import java.io.OutputStreamWriter;
 
@@ -31,17 +29,17 @@ public class Signup extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
 
-        l1 = (LinearLayout) findViewById(R.id.l1);
-        l2 = (LinearLayout) findViewById(R.id.l2);
-        cabutton = (Button) findViewById(R.id.cabutton);
-        login = (TextView) findViewById(R.id.login);
+        l1 = findViewById(R.id.l1);
+        l2 = findViewById(R.id.l2);
+        cabutton = findViewById(R.id.cabutton);
+        login = findViewById(R.id.login);
         uptodown = AnimationUtils.loadAnimation(this, R.anim.uptodown);
         l1.setAnimation(uptodown);
         downtoup = AnimationUtils.loadAnimation(this, R.anim.downtoup);
         l2.setAnimation(downtoup);
-        user = (EditText) findViewById(R.id.user);
-        pass = (EditText) findViewById(R.id.pass);
-        confirmpass = (EditText) findViewById(R.id.confirmpass);
+        user = findViewById(R.id.user);
+        pass = findViewById(R.id.pass);
+        confirmpass = findViewById(R.id.confirmpass);
 
         cabutton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -71,7 +69,7 @@ public class Signup extends AppCompatActivity {
 
         final ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setIndeterminate(true);
-        progressDialog.setMessage("Authenticating...");
+        progressDialog.setMessage("Autenticando...");
         progressDialog.show();
 
         new android.os.Handler().postDelayed(
@@ -89,7 +87,7 @@ public class Signup extends AppCompatActivity {
     }
 
     public void onSignUpFailed(){
-        Toast.makeText(getBaseContext(), "Sign up failed. Try again", Toast.LENGTH_LONG).show();
+        Toast.makeText(getBaseContext(), "Registro fallido. Prueba de nuevo", Toast.LENGTH_LONG).show();
         cabutton.setEnabled(true);
     }
 
@@ -135,21 +133,21 @@ public class Signup extends AppCompatActivity {
         String pw2 = confirmpass.getText().toString();
 
         if(userName.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(userName).matches()){
-            user.setError("enter a valid username");
+            user.setError("Introduzca un nombre válido");
             valid = false;
         }else{
             user.setError(null);
         }
 
         if(pw.isEmpty()){
-            pass.setError("password cannot be empty");
+            pass.setError("La contraseña no puede estar vacía");
             valid = false;
         }else{
             pass.setError(null);
         }
 
         if(pw2.isEmpty() || !pw2.equals(pw)){
-            confirmpass.setError("password doesn't match");
+            confirmpass.setError("Las contraseñas no coinciden");
             valid = false;
         }
 

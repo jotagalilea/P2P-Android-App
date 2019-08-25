@@ -59,7 +59,7 @@ public class friendsgroup extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                newGroup= new Groups(nameGroup,R.drawable.group,friends);
+                newGroup= new Groups(nameGroup,R.drawable.icongroup,friends);
                 //Falta la implemenntacion de guardar los datos en la BBDD
                // ArrayList<Friends> marcados = RVadapter.;
                 String contenidoMarcados = "Marcados: ";

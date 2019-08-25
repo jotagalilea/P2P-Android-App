@@ -32,7 +32,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="180dp"
-        android:text="Your new way of sharing files with your friends"
+        android:gravity="center"
+        android:text="Comparte archivos con tus amigos"
         android:textSize="25dp" />
 
 
