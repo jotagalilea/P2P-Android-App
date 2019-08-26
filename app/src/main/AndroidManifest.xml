@@ -36,20 +36,64 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar">
         <activity android:name=".friendsgroup"></activity>
-        <activity android:name=".MainActivity">
+        <activity
+            android:name=".UsersSharedWithActivity"
+            android:label="@string/users_shared_with_title"
+            android:theme="@style/NoActionBar"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden" />
+        <activity
+            android:name=".SharedFoldersActivity"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden" />
+        <activity
+            android:name=".DownloadManagerActivity"
+            android:label="@string/title_activity_download_manager"
+            android:theme="@style/NoActionBar"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name=".BlockedUsersActivity"
+            android:label="@string/title_activity_blocked_users"
+            android:theme="@style/NoActionBar"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".Signup" />
-        <activity android:name=".Profile" />
-        <activity android:name=".CreateName" />
+        <activity
+            android:name=".Signup"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden" />
+        <activity
+            android:name=".Profile"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name=".CreateName"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
         <activity
             android:name=".Recursos"
-            android:noHistory="true" />
-        <activity android:name=".ArchiveExplorer" />
+            android:noHistory="true"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name=".ArchiveExplorer"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
+
+        <service
+            android:name=".DownloadService"
+            android:directBootAware="true"
+            android:exported="false" />
     </application>
 
 </manifest>
