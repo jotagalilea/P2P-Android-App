@@ -69,6 +69,7 @@ public class Profile extends AppCompatActivity {
 	Dialog mdialog;
 	Dialog mdialogGroup;
 	FloatingActionButton fab;
+	FloatingActionButton groups;
 	EditText name;
 	EditText nameGroup;
 	Button bf;
@@ -182,6 +183,17 @@ public class Profile extends AppCompatActivity {
 		getSupportActionBar().setTitle("Hola, " + getIntent().getExtras().getString("user"));
 
 		comprobarPermisos();
+
+		// Botón para ir a la activity de grupos.
+		groups = (FloatingActionButton) findViewById(R.id.groupsButton);
+		groups.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(Profile.this, listGroupsActivity.class);
+				//intent.putExtra("friendsList", al_friends);
+				startActivityForResult(intent, 1);
+			}
+		});
 
 		fab = (FloatingActionButton) findViewById(R.id.addFriendsFAB);
 

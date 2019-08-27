@@ -37,7 +37,7 @@ public class friendsgroup extends AppCompatActivity {
 
         Bundle extras = getIntent().getExtras();
         nameGroup = extras.getString("nameGroup");
-        listadeamigos();
+        friends=listadeamigos();
 
         recyclerView = (RecyclerView) findViewById(R.id.rv_friendsgroup);
 
@@ -73,12 +73,12 @@ public class friendsgroup extends AppCompatActivity {
         });
     }
     // ...
-    protected void listadeamigos(){
-        friends= new ArrayList<>();
-        friends= new ArrayList<>();
-        friends.add(new Friends("Alex", R.drawable.astronaura));
-        friends.add(new Friends("Alba", R.drawable.cohete));
-        friends.add(new Friends("Rupert", R.drawable.astronaura));
+    public ArrayList<Friends> listadeamigos(){
+        ArrayList<Friends> listFriends= new ArrayList<>();
+        listFriends.add(new Friends("Alex", R.drawable.astronaura));
+        listFriends.add(new Friends("Alba", R.drawable.cohete));
+        listFriends.add(new Friends("Rupert", R.drawable.astronaura));
+        return listFriends;
     }
 
 }
