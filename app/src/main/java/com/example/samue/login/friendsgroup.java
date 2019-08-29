@@ -25,6 +25,7 @@ public class friendsgroup extends AppCompatActivity {
     private RecyclerView.Adapter RVadapter;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<Friends> friends;
+    private ArrayList files;
     private String nameGroup;
     private Groups newGroup;
     @Override
@@ -38,6 +39,7 @@ public class friendsgroup extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         nameGroup = extras.getString("nameGroup");
         friends=listadeamigos();
+
 
         recyclerView = (RecyclerView) findViewById(R.id.rv_friendsgroup);
 
@@ -59,6 +61,8 @@ public class friendsgroup extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+
                 newGroup= new Groups(nameGroup,R.drawable.icongroup,friends);
                 //Falta la implemenntacion de guardar los datos en la BBDD
                // ArrayList<Friends> marcados = RVadapter.;
