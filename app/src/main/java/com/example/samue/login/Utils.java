@@ -36,7 +36,7 @@ public class Utils {
 	);
 
 	public static final ArrayList<String> SUPPORTED_PREVIEW_FORMATS = new ArrayList<>(
-		Arrays.asList("txt","pdf","mp3","jpg","png")
+		Arrays.asList("txt","pdf","mp3","jpg","png","docx")
 	);
 
 

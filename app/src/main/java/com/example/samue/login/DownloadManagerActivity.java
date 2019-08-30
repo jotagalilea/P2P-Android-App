@@ -145,4 +145,10 @@ public class DownloadManagerActivity extends AppCompatActivity {
 	}
 
 
+	@Override
+	public void onDestroy(){
+		unbindService(serviceConnection);
+		super.onDestroy();
+	}
+
 }

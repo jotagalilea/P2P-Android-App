@@ -805,7 +805,7 @@ public class Profile extends AppCompatActivity {
 			case "doc": maxSize = 10*1024; break;
 			case "docx": maxSize = 10*1024; break;
 			case "ppt": maxSize = 100*1024; break;
-			case "html": maxSize = 1024; break;
+			case "html": maxSize = 10*1024; break;
 			case "css": maxSize = 1024; break;
 			case "xls": maxSize = 10*1024; break;
 			case "xlsx": maxSize = 10*1024; break;
@@ -1162,6 +1162,7 @@ public class Profile extends AppCompatActivity {
 				pnRTCClient.closeConnection(sendTo2);
 				sendingFile = false;
 				// Se avisa al manager de que se ha terminado la subida y puede lanzar la siguiente en la cola, si existe:
+				sendersManager.removeSender(file2.getName());
 				sendersManager.notifyFinishedUpload();
 			} catch (Exception e){
 				e.printStackTrace();

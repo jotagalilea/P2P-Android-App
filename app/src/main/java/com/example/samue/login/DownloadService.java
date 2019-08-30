@@ -133,26 +133,12 @@ public class DownloadService extends Service{
 					public void run() {
 						if (hasFreeThreads() && !msgQueue.isEmpty()){
 							/* Si hay hilos disponibles se coge uno de los mensajes de petición de archivo
-							 * previamente preparado y se transmite.
+							 * previamente preparado y se transmite la solicitud.
 							 */
 							Pair<String,JSONObject> p = msgQueue.poll();
 							String sendTo = p.first;
 							JSONObject msg = p.second;
 							Profile.pnRTCClient.transmit(sendTo, msg);
-							/*boolean dl_found = false;
-							Download d = null;
-							Iterator<Download> it = al_downloads.iterator();
-							// Busca una descarga parada y no terminada:
-							while (it.hasNext() && !dl_found){
-								d = it.next();
-								dl_found = !d.isRunning() && !d.isFinished();
-							}
-							// Si se encuentra se lanza:
-							if (dl_found) {
-								dl = d;
-								startDownload();
-							}
-							*/
 						}
 					}
 				}, 10010, 10010);
@@ -185,8 +171,11 @@ public class DownloadService extends Service{
 							else
 								notifyAndSetJson();
 						}
-						// Si no hay hilos disponibles, entonces se trata seguro de un json para alguna de
-						// las descargas activas y hay que pasárselo y notificárselo.
+						/* Si no hay hilos disponibles, entonces se trata seguro de un json para alguna de
+						 * las descargas activas y hay que pasárselo y notificárselo, puesto que no es posible
+						 * que se haya hecho una petición para una tercera descarga si no había al menos un
+						 * hilo libre. Sólo cuando esto sucede es cuando se transmite una de las solicitudes en cola.
+						 */
 						else
 							notifyAndSetJson();
 
@@ -350,7 +339,6 @@ public class DownloadService extends Service{
 						try {
 							getApplicationContext().startActivity(newIntent);
 						} catch (ActivityNotFoundException e) {
-							//TODO: Cambiar mensaje.
 							Toast.makeText(getApplicationContext(), "No handler for this type of file.", Toast.LENGTH_LONG).show();
 						}
 					}

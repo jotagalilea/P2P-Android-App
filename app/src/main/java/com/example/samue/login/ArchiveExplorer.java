@@ -145,6 +145,7 @@ public class ArchiveExplorer extends AppCompatActivity {
 										ListView selectionList = addFriendsDl.findViewById(R.id.select_friends_list);
 										final SelectFriends_Adapter fAdapter = new SelectFriends_Adapter(ArchiveExplorer.this, friendsNames);
 										selectionList.setAdapter(fAdapter);
+										progressDialog.dismiss();
 										addFriendsDl.show();
 
 										Button addSelected = addFriendsDl.findViewById(R.id.button_add_selected);
