@@ -17,21 +17,35 @@ import java.util.List;
  public class RVadapter extends RecyclerView.Adapter<RVadapter.FriendViewHolder> {
 
     List<Friends> friends;
-    private SparseBooleanArray selectedItems;
+    public SparseBooleanArray selectedItems;
+    public  List<Friends> marcados;
 
 
-    public RVadapter(List<Friends> friendgroup) {
+
+     public RVadapter(List<Friends> friendgroup) {
         this.friends = friendgroup;
         selectedItems = new SparseBooleanArray();
-
+        marcados = new ArrayList<Friends>();
     }
+
+      List<Friends> getCheckedItems() {
+         List<Friends> checkedItems = new ArrayList<>();
+         for (int i = 0; i < getItemCount(); i++) {
+             if (selectedItems.get(i)) {
+                 checkedItems.add(getItem(i));
+             }
+         }
+         return checkedItems;
+     }
 
     @Override
     public int getItemCount() {
         return friends.size();
     }
 
-     public SparseBooleanArray getFriends() {  return selectedItems; }
+     public Friends getItem(int position) {
+         return friends.get(position);
+     }
 
     @Override
     public FriendViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
@@ -69,6 +83,7 @@ import java.util.List;
             cv.setOnClickListener(this);
             layout= (RelativeLayout) itemView.findViewById(R.id.carview_layout);
         }
+
         @Override
         public void onClick(View v) {
             if (!layout.isSelected()) {
@@ -78,10 +93,10 @@ import java.util.List;
                 layout.setSelected(false);
                 selectedItems.put(getAdapterPosition(), false);
             }
+            getCheckedItems();
 
             Log.d("CREATION",selectedItems.toString());
         }
-
 
     }
 
@@ -92,19 +107,20 @@ import java.util.List;
         }
         return false;
     }
-
-    /**
-     * Devuelve aquellos objetos marcados.
-     */
+     /**
+      * Devuelve aquellos objetos marcados.
+      */
      public  ArrayList<Friends> obtenerSeleccionados() {
-        ArrayList<Friends> marcados = new ArrayList<>();
-        for (int i = 0; i < friends.size(); i++) {
-            if (selectedItems.get(i)) {
-                marcados.add(friends.get(i));
-            }
-        }
-        return marcados;
-    }
+         ArrayList<Friends> marcados = new ArrayList<>();
+         for (int i = 0; i < friends.size(); i++) {
+             if (selectedItems.get(i)) {
+                 marcados.add(friends.get(i));
+             }
+         }
+         return marcados;
+     }
+
+
 
 
 

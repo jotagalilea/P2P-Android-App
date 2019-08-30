@@ -1,11 +1,13 @@
 package com.example.samue.login;
 
+import android.content.Intent;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.RecyclerViewAccessibilityDelegate;
 import android.support.v7.widget.Toolbar;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
@@ -22,9 +24,11 @@ import java.util.List;
 
 public class friendsgroup extends AppCompatActivity {
     private RecyclerView recyclerView;
-    private RecyclerView.Adapter RVadapter;
+    private RecyclerView.Adapter rvadapter;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<Friends> friends;
+    private ArrayList<Friends> friendsSelected;
+    public SparseBooleanArray selectedItems;
     private ArrayList files;
     private String nameGroup;
     private Groups newGroup;
@@ -38,7 +42,12 @@ public class friendsgroup extends AppCompatActivity {
 
         Bundle extras = getIntent().getExtras();
         nameGroup = extras.getString("nameGroup");
+
+
+        //ArrayList<Friends> friends= new ArrayList<>();
+        //llamar a base de datos u cargar amigos de verdad, no lista estatica
         friends=listadeamigos();
+        friendsSelected=new ArrayList<>();
 
 
         recyclerView = (RecyclerView) findViewById(R.id.rv_friendsgroup);
@@ -51,11 +60,14 @@ public class friendsgroup extends AppCompatActivity {
         layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
 
-        //friends=funcionquedevuelveamigos();  // -->buscar o implementar funcion que devuelva amigos del usuario
-
         // specify an adapter (see also next example)
-        RVadapter = new RVadapter(friends);
-        recyclerView.setAdapter(RVadapter);
+        rvadapter = new RVadapter(friends);
+        recyclerView.setAdapter(rvadapter);
+
+
+
+
+
 
         FloatingActionButton button = findViewById(R.id.createGroup);
         button.setOnClickListener(new View.OnClickListener() {
@@ -63,7 +75,7 @@ public class friendsgroup extends AppCompatActivity {
             public void onClick(View v) {
 
 
-                newGroup= new Groups(nameGroup,R.drawable.icongroup,friends);
+                newGroup= new Groups(nameGroup,R.drawable.icongroup,friendsSelected);
                 //Falta la implemenntacion de guardar los datos en la BBDD
                // ArrayList<Friends> marcados = RVadapter.;
                 String contenidoMarcados = "Marcados: ";
@@ -84,6 +96,10 @@ public class friendsgroup extends AppCompatActivity {
         listFriends.add(new Friends("Rupert", R.drawable.astronaura));
         return listFriends;
     }
+
+
+
+
 
 }
 
