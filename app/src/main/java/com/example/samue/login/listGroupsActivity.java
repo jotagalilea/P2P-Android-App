@@ -4,10 +4,12 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
@@ -23,17 +25,17 @@ public class listGroupsActivity extends AppCompatActivity {
     private ListView listView;
     private ArrayList<Groups> listGroups;
 
+    Dialog mdialogCreate;
+    Dialog mdialogDelete;
+    EditText nameGroup;
+    Button bf;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_groups);
-        Intent intent = getIntent();
-        //sharedFolders = (HashMap<String,ArrayList<String>>) intent.getSerializableExtra("sharedFolders");
-       // foldersAccess = (HashMap<String,ArrayList<String>>) intent.getSerializableExtra("foldersAccess");
-       // al_friends = (ArrayList<Friends>) intent.getSerializableExtra("friends");
 
-        //loadFoldersNamesAndPrepareAdapter();
         ArrayList<Friends> listFriends= new ArrayList<>();
         listFriends.add(new Friends("Alex", R.drawable.astronaura));
         listFriends.add(new Friends("Alba", R.drawable.cohete));
@@ -42,7 +44,7 @@ public class listGroupsActivity extends AppCompatActivity {
         listGroups.add(new Groups("grupo1",R.drawable.group,listFriends));
         listGroups.add(new Groups("grupo2",R.drawable.group,listFriends));
         adapter = new GroupsAdapter(this, listGroups);
-        listView = findViewById(R.id.shared_folders_list);
+        listView = findViewById(R.id.groups_list);
         listView.setAdapter(adapter);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -91,15 +93,36 @@ public class listGroupsActivity extends AppCompatActivity {
                 });
             }
         });
+        FloatingActionButton createGroup = findViewById(R.id.createGroup);
+        createGroup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mdialogCreate = new Dialog(listGroupsActivity.this);
+                mdialogCreate.setContentView(R.layout.dialog_newgroup);
+                mdialogCreate.show();
+                nameGroup = (EditText) mdialogCreate.findViewById(R.id.nameGroup);
+                bf = (Button) mdialogCreate.findViewById(R.id.button_addFriends);
+
+                bf.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View view) {
+                        mdialogCreate.dismiss();
+                        Intent myIntent = new Intent(listGroupsActivity.this, friendsgroup.class);
+                        myIntent.putExtra("nameGroup", nameGroup.getText().toString());
+                        startActivityForResult(myIntent, 3);
+                        finish();
+                    }
+
+                });
+            }
+        });
+
     }
 
     @Override
     public void onBackPressed() {
-        Intent result = new Intent();
-        //result.putExtra("foldersArray", sharedFolders);
-        //result.putExtra("accessArray", foldersAccess);
-        setResult(Activity.RESULT_OK, result);
-        super.onBackPressed();
+        finish();
+
+
     }
 
 

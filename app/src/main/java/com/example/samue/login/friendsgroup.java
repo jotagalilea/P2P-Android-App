@@ -24,7 +24,7 @@ import java.util.List;
 
 public class friendsgroup extends AppCompatActivity {
     private RecyclerView recyclerView;
-    private RecyclerView.Adapter rvadapter;
+    private RVadapter rvadapter;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<Friends> friends;
     private ArrayList<Friends> friendsSelected;
@@ -73,17 +73,18 @@ public class friendsgroup extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                friendsSelected=rvadapter.obtenerSeleccionados();
 
                 newGroup= new Groups(nameGroup,R.drawable.icongroup,friendsSelected);
                 //Falta la implemenntacion de guardar los datos en la BBDD
                // ArrayList<Friends> marcados = RVadapter.;
-                String contenidoMarcados = "Marcados: ";
+               // String contenidoMarcados = "Marcados: ";
                // for (Friends os : marcados){
                //     contenidoMarcados += os.getTexto() + ", ";
                // }
                 Toast.makeText(getApplicationContext(), "Group "+ nameGroup + " has been created", Toast.LENGTH_SHORT).show();
-                //Toast.makeText(getApplicationContext(), "Seleccionados: "+ nameGroup , Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
+                startActivityForResult(intent, 1);
                 finish();
             }
         });
