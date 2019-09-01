@@ -339,7 +339,7 @@ public class DownloadService extends Service{
 						try {
 							getApplicationContext().startActivity(newIntent);
 						} catch (ActivityNotFoundException e) {
-							Toast.makeText(getApplicationContext(), "No handler for this type of file.", Toast.LENGTH_LONG).show();
+							Toast.makeText(getApplicationContext(), "No se puede abrir este tipo de archivo", Toast.LENGTH_LONG).show();
 						}
 					}
 

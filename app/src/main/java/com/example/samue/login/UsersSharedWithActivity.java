@@ -28,6 +28,7 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 	private ArrayList<String> usersSelected;
 	private SelectFriends_Adapter adapter;
 	private ListView listView;
+	private boolean noFriendsLeft;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +44,16 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 		al_friends = (ArrayList<Friends>) intent.getSerializableExtra("friends");
 
 		listView = findViewById(R.id.friendswaccess_list);
-		adapter = new SelectFriends_Adapter(UsersSharedWithActivity.this, usersWithAccess);
+		if (usersWithAccess!=null) {
+			adapter = new SelectFriends_Adapter(UsersSharedWithActivity.this, usersWithAccess);
+			noFriendsLeft = false;
+		}
+		else {
+			ArrayList<String> empty_al = new ArrayList<>();
+			empty_al.add("No quedan amigos con acceso");
+			adapter = new SelectFriends_Adapter(UsersSharedWithActivity.this, empty_al);
+			noFriendsLeft = true;
+		}
 		listView.setAdapter(adapter);
 
 		Intent nothingChanged = new Intent();
@@ -95,7 +105,14 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 		removeFriendsFAB.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View view) {
-				if (adapter.getCountSelected() > 0) {
+				if (noFriendsLeft) {
+					helper.removeSharedFolder(folderName);
+					Intent removedINT = new Intent();
+					removedINT.putExtra("someRemovedOrAdded", true);
+					setResult(RESULT_OK, removedINT);
+					onBackPressed();
+				}
+				else if (adapter.getCountSelected() > 0) {
 					boolean[] selected = adapter.getSelected();
 					for (int i = 0; i < selected.length; i++) {
 						if (selected[i])

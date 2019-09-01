@@ -2,7 +2,6 @@ package com.example.samue.login;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -94,7 +93,6 @@ public class Profile extends AppCompatActivity {
 	private FileSender activeFileSender;
 	private SendersManager sendersManager;
 	boolean sendingFile;
-	ProgressDialog pd;
 	private DownloadService downloadService;
 	private Intent dl_intent;
 	private boolean serviceBound = false;
@@ -150,7 +148,8 @@ public class Profile extends AppCompatActivity {
 					public void onClick(View v) {
 						mdialog.dismiss();
 						userRecursos = connectTo;
-						publish(connectTo, "VAR");
+						Toast.makeText(getApplicationContext(), "Conectando con "+connectTo, Toast.LENGTH_LONG).show();
+						publish(connectTo,"VAR");
 					}
 				});
 
@@ -159,7 +158,8 @@ public class Profile extends AppCompatActivity {
 					@Override
 					public void onClick(View v) {
 						mdialog.dismiss();
-						mDatabaseHelper.removeData(connectTo, mDatabaseHelper.FRIENDS_TABLE_NAME);
+						mDatabaseHelper.deleteFriend(connectTo);
+						loadFoldersAccess();
 						populateListView();
 						Toast.makeText(getApplicationContext(), "Amigo "+ connectTo + " eliminado", Toast.LENGTH_LONG).show();
 					}
@@ -171,6 +171,7 @@ public class Profile extends AppCompatActivity {
 					public void onClick(View view) {
 						mdialog.dismiss();
 						userRecursos = connectTo;
+						Toast.makeText(getApplicationContext(), "Conectando con "+connectTo, Toast.LENGTH_LONG).show();
 						publish(connectTo, "VSF"); //View Shared Folders
 					}
 				});
@@ -186,7 +187,7 @@ public class Profile extends AppCompatActivity {
 		fab = (FloatingActionButton) findViewById(R.id.addFriendsFAB);
 
 		// Botón para compartir un archivo o una carpeta.
-		fab.setOnClickListener(new View.OnClickListener() { //TODO debe subir al fichero interno el path del archivo que elije
+		fab.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(Profile.this, ArchiveExplorer.class);
@@ -792,26 +793,21 @@ public class Profile extends AppCompatActivity {
 
 	/**
 	 * Cuando el usuario remoto quiere previsualizar un archivo hay que enviarle cierta cantidad de
-	 * datos, pero depende del tipo de archivo. Esté método determina la cantidad de datos que se
-	 * van a enviar en función del tipo del archivo.
+	 * datos, la cual depende del tipo de archivo. Esté método determina la cantidad de datos que se
+	 * van a enviar en función del tipo del archivo si procede limitarlo de esta manera.
 	 * @param ext Extensión del archivo.
 	 * @return Tamaño máximo de datos para el envío.
 	 */
 	private int setPreviewSize(String ext){
 		int maxSize;
 		switch (ext){
-			case "txt": maxSize = 1024; break;
+			case "txt": maxSize = 16*1024; break;
 			case "mp3": maxSize = 1024*1024; break;
-			case "doc": maxSize = 10*1024; break;
-			case "docx": maxSize = 10*1024; break;
-			case "ppt": maxSize = 100*1024; break;
-			case "html": maxSize = 10*1024; break;
-			case "css": maxSize = 1024; break;
-			case "xls": maxSize = 10*1024; break;
-			case "xlsx": maxSize = 10*1024; break;
-			case "csv": maxSize = 1024; break;
-			//case "mp4": maxSize = 1024*1024*10; break;
-			//case "avi": maxSize = 1024*1024*10; break;
+			//case "docx": maxSize = 16*1024; break;
+			//case "pptx": maxSize = 96*1024; break;
+			case "html": maxSize = 16*1024; break;
+			case "css": maxSize = 16*1024; break;
+			//case "xlsx": maxSize = 16*1024; break;
 			default: maxSize = 0;
 		}
 		return maxSize;
@@ -836,36 +832,40 @@ public class Profile extends AppCompatActivity {
 			final String userFR = jsonMsg.getString("sendTo");
 			// Si el usuario está bloqueado se desecha la petición silenciosamente.
 			if (!listContains(userFR, al_blocked_users)){
-				mdialog = new Dialog(Profile.this);
-				mdialog.setContentView(R.layout.dialog_acceptfriend);
-				mdialog.show();
-				TextView f_name = (TextView) mdialog.findViewById(R.id.accept_friend_tv);
-				f_name.setText("¿Quieres aceptar a " + userFR + " como amigo?");
+				ArrayList<String> friendsStrings = Utils.getFriendsArrayListAsStrings(al_friends);
+				// Si el usuario no estaba agregado como amigo se añade:
+				if (!friendsStrings.contains(userFR)) {
+					mdialog = new Dialog(Profile.this);
+					mdialog.setContentView(R.layout.dialog_acceptfriend);
+					mdialog.show();
+					TextView f_name = (TextView) mdialog.findViewById(R.id.accept_friend_tv);
+					f_name.setText("¿Quieres aceptar a " + userFR + " como amigo?");
 
-				Button yes = mdialog.findViewById(R.id.accept_friend_yes);
-				Button no = mdialog.findViewById(R.id.accept_friend_no);
+					Button yes = mdialog.findViewById(R.id.accept_friend_yes);
+					Button no = mdialog.findViewById(R.id.accept_friend_no);
 
-				no.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						mdialog.dismiss();
-						cerrarConexion(userFR);
-					}
-				});
+					no.setOnClickListener(new View.OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							mdialog.dismiss();
+							cerrarConexion(userFR);
+						}
+					});
 
-				yes.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						Profile.this.runOnUiThread(new Runnable() {
-							@Override
-							public void run() {
-								addData(userFR);
-							}
-						});
-						FA(userFR);
-						mdialog.dismiss();
-					}
-				});
+					yes.setOnClickListener(new View.OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							Profile.this.runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									addData(userFR);
+								}
+							});
+							FA(userFR);
+							mdialog.dismiss();
+						}
+					});
+				}
 			}
 
 		}catch(Exception e){
@@ -1133,10 +1133,7 @@ public class Profile extends AppCompatActivity {
 					bytesRead = fis.read(bFile);
 					totalBytesRead += bytesRead;
 					if (isPreview)
-						if (previewLength > 0)
-							lastPiece = totalBytesRead >= previewLength;
-						else
-							lastPiece = (bytesRead < bFile.length);
+						lastPiece = (totalBytesRead >= previewLength) || (bytesRead < bFile.length);
 					else
 						lastPiece = (bytesRead < bFile.length);
 
@@ -1154,7 +1151,7 @@ public class Profile extends AppCompatActivity {
 						firstPiece = false;
 					}
 				}
-				// Si setPreviewSize devolvió 0 entonces sé que ha sido necesario crear un archivo nuevo, y hay que borrarlo.
+				// Si ha sido necesario crear un archivo nuevo hay que borrarlo.
 				if (file2.getName().contains("_preview"))
 					file2.delete();
 
