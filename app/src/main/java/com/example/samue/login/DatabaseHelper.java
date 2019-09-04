@@ -353,8 +353,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		contentValues.put(GROUPS_COL2, friends);
 		//contentValues.put(GROUPS_COL3, "null");
 		//contentValues.put(GROUPS_COL4, "null");
-		Log.d(TAG, "addData: Adding " + name + " to " + FRIENDS_TABLE_NAME);
-		long result = db.insert(FRIENDS_TABLE_NAME, null, contentValues);
+		Log.d(TAG, "addData: Adding " + name + " to " + GROUPS_TABLE_NAME);
+		long result = db.insert(GROUPS_TABLE_NAME, null, contentValues);
 		if (result == -1)
 			return false;
 		else

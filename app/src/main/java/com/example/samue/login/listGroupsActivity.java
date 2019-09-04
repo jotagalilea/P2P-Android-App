@@ -3,6 +3,7 @@ package com.example.samue.login;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -24,6 +25,7 @@ public class listGroupsActivity extends AppCompatActivity {
     private GroupsAdapter adapter;
     private ListView listView;
     private ArrayList<Groups> listGroups;
+
 
     Dialog mdialogCreate;
     Dialog mdialogDelete;
@@ -124,6 +126,9 @@ public class listGroupsActivity extends AppCompatActivity {
 
 
     }
+
+
+
 
 
 }
