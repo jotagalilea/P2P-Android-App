@@ -191,7 +191,7 @@ public class Profile extends AppCompatActivity {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(Profile.this, listGroupsActivity.class);
-				//intent.putExtra("friendsList", al_friends);
+				intent.putExtra("username", username);
 				startActivityForResult(intent, 1);
 			}
 		});
@@ -476,6 +476,7 @@ public class Profile extends AppCompatActivity {
                         mdialogGroup.dismiss();
                         Intent myIntent = new Intent(Profile.this, friendsgroup.class);
                         myIntent.putExtra("nameGroup", nameGroup.getText().toString());
+                        myIntent.putExtra("username",username);
                         startActivityForResult(myIntent, 3);
                     }
 

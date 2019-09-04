@@ -44,19 +44,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	private static final String GROUPS_COL1 = "name_group";
 	private static final String GROUPS_COL2 = "friends";
 	private static final String GROUPS_COL3 = "files";
-	private static final String GROUPS_COL4 = "owner";
+	private static final String GROUPS_COL4 = "owners";
+	private static final String GROUPS_COL5 = "admin";
 
 	/*
 	 * Colección de todos los nombres de las tablas de la base de datos. La finalidad de esta
 	 * estructura es asegurar complejidad constante cuando se quiera consultar si una tabla existe.
 	 */
 	//TODO: Actualizar esta colección en el constructor si se añaden nuevas tablas a la aplicación.
-	private static final HashSet<String> TABLE_NAMES = new HashSet<>(4);
+	private static final HashSet<String> TABLE_NAMES = new HashSet<>(5);
 
 
     public DatabaseHelper(Context context){
         super(context, DB_NAME, null, 1);
-         context.deleteDatabase(DB_NAME); //para borrar la base de datos si hace falta
+        // context.deleteDatabase(DB_NAME); //para borrar la base de datos si hace falta
         TABLE_NAMES.add(FRIENDS_TABLE_NAME);
         TABLE_NAMES.add(BLOCKED_TABLE_NAME);
         TABLE_NAMES.add(FOLDER_ACCESS_TABLE);
@@ -72,7 +73,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 				"FOREIGN KEY (" +FOLDER_ACCESS_COL1+ ") REFERENCES " +SHARED_FOLDERS_TABLE+ " (" +SHARED_FOLDERS_COL1+ ")," +
 				"FOREIGN KEY (" +FOLDER_ACCESS_COL2+ ") REFERENCES " +FRIENDS_TABLE_NAME+" (" +FRIENDS_COL1+ "));";
 		String createTable5 = "CREATE TABLE " +GROUPS_TABLE_NAME+ "(" +GROUPS_COL1+ " TEXT PRIMARY KEY, " +GROUPS_COL2+ " TEXT, "+
-				GROUPS_COL3+ " TEXT, " +GROUPS_COL4+ " TEXT);";
+				GROUPS_COL3+ " TEXT, " +GROUPS_COL4+ " TEXT, " +GROUPS_COL5+ " TEXT);";
 		db.execSQL(createTable1);
         db.execSQL(createTable2);
         db.execSQL(createTable3);
@@ -358,28 +359,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		}
 	}
 
-	/**
-	 * Borra un amigo. Si este tenía acceso a alguna carpeta compartida se elimina de ellas.
-	 * @param name
-	 * @return
-	 */
-	public boolean deleteFriend(String name){
-		SQLiteDatabase db = getWritableDatabase();
-		Cursor user = db.query(FRIENDS_TABLE_NAME, new String[]{FRIENDS_COL1}, FRIENDS_COL2+"=?", new String[]{name},
-				null, null, null);
-		user.moveToNext();
-		String where = FOLDER_ACCESS_COL2+'='+user.getInt(0);
-		int result = db.delete(FOLDER_ACCESS_TABLE, where, null);
-
-		if (result == -1)
-			return false;
-		else{
-			removeData(name, FRIENDS_TABLE_NAME);
-			return true;
-		}
-	}
-
-
 	//Funciones relacionadas con los GRUPOS
 
 	/**
@@ -388,13 +367,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	 * @param friends Lista de amigos del grupo en un string.
 	 * @return true si ha tenido éxito, false en caso contrario.
 	 */
-	public boolean addGroup(String name, String friends){
+	public boolean addGroup(String name, String friends, String administrator){
 		SQLiteDatabase db = this.getWritableDatabase();
 		ContentValues contentValues = new ContentValues();
 		contentValues.put(GROUPS_COL1, name);
 		contentValues.put(GROUPS_COL2, friends);
 		//contentValues.put(GROUPS_COL3, "null");
 		//contentValues.put(GROUPS_COL4, "null");
+		contentValues.put(GROUPS_COL5,administrator);
 		Log.d(TAG, "addData: Adding " + name + " to " + GROUPS_TABLE_NAME);
 		long result = db.insert(GROUPS_TABLE_NAME, null, contentValues);
 		if (result == -1)

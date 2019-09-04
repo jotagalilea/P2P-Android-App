@@ -15,6 +15,7 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,6 +26,8 @@ public class listGroupsActivity extends AppCompatActivity {
     private GroupsAdapter adapter;
     private ListView listView;
     private ArrayList<Groups> listGroups;
+    private String username;
+    static DatabaseHelper groupDatabaseHelper;
 
 
     Dialog mdialogCreate;
@@ -37,15 +40,17 @@ public class listGroupsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_groups);
+        groupDatabaseHelper = new DatabaseHelper(this);
 
         ArrayList<Friends> listFriends= new ArrayList<>();
         listFriends.add(new Friends("Alex", R.drawable.astronaura));
         listFriends.add(new Friends("Alba", R.drawable.cohete));
         listFriends.add(new Friends("Rupert", R.drawable.astronaura));
         listGroups= new ArrayList<Groups>();
-        listGroups.add(new Groups("grupo1",R.drawable.group,listFriends));
-        listGroups.add(new Groups("grupo2",R.drawable.group,listFriends));
-        adapter = new GroupsAdapter(this, listGroups);
+        loadGroupList();
+        //listGroups.add(new Groups("grupo1",R.drawable.group,listFriends,username));
+        //listGroups.add(new Groups("grupo2",R.drawable.group,listFriends,username));
+        //adapter = new GroupsAdapter(this, listGroups);
         listView = findViewById(R.id.groups_list);
         listView.setAdapter(adapter);
 
@@ -110,6 +115,7 @@ public class listGroupsActivity extends AppCompatActivity {
                         mdialogCreate.dismiss();
                         Intent myIntent = new Intent(listGroupsActivity.this, friendsgroup.class);
                         myIntent.putExtra("nameGroup", nameGroup.getText().toString());
+                        myIntent.putExtra("username",username);
                         startActivityForResult(myIntent, 3);
                         finish();
                     }
@@ -123,9 +129,38 @@ public class listGroupsActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         finish();
-
-
     }
+    /**
+     * Carga de los grupos que estan almacenados en la BD.
+     */
+    private void loadGroupList() {
+        Cursor c = groupDatabaseHelper.getData(DatabaseHelper.GROUPS_TABLE_NAME);
+        listGroups = new ArrayList<Groups>();
+        while (c.moveToNext()){
+            ArrayList<Friends> friends=stringtoArrayListFriend(c.getString(1));
+            ArrayList<Friends> files=stringtoArrayList(c.getString(2));
+            ArrayList<Friends> owners=stringtoArrayListFriend(c.getString(3));
+            Groups g = new Groups(c.getString(0),R.drawable.icongroup, friends,files,owners,c.getString(4));
+            listGroups.add(g);
+        }
+    }
+    private ArrayList<Friends> stringtoArrayListFriend(String friends){
+        ArrayList<Friends> resultado= new ArrayList<>();
+        String[] friendsSeparate = friends.split(",");
+        for (int i=0; i<friendsSeparate.length; i++){
+            resultado.add(new Friends(friendsSeparate[i],R.drawable.astronaura));
+        }
+        return resultado;
+    }
+    private ArrayList<Friends> stringtoArrayList(String files){
+        ArrayList resultado= new ArrayList();
+        String[] filesSeparate = files.split(",");
+        for (int i=0; i<filesSeparate.length; i++){
+            resultado.add(filesSeparate[i]);
+        }
+        return resultado;
+    }
+
 
 
 
