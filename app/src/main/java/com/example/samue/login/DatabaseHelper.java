@@ -39,6 +39,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	private static final String FOLDER_ACCESS_COL2 = "userid";
 
 
+	//Tabla con los grupos a las que tiene acceso cada usuario.
+	static final String GROUPS_TABLE_NAME = "groups";
+	private static final String GROUPS_COL1 = "name_group";
+	private static final String GROUPS_COL2 = "friends";
+	private static final String GROUPS_COL3 = "files";
+	private static final String GROUPS_COL4 = "owner";
+
 	/*
 	 * Colección de todos los nombres de las tablas de la base de datos. La finalidad de esta
 	 * estructura es asegurar complejidad constante cuando se quiera consultar si una tabla existe.
@@ -49,11 +56,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public DatabaseHelper(Context context){
         super(context, DB_NAME, null, 1);
-        //context.deleteDatabase(DB_NAME); //para borrar la base de datos si hace falta
+         context.deleteDatabase(DB_NAME); //para borrar la base de datos si hace falta
         TABLE_NAMES.add(FRIENDS_TABLE_NAME);
         TABLE_NAMES.add(BLOCKED_TABLE_NAME);
         TABLE_NAMES.add(FOLDER_ACCESS_TABLE);
         TABLE_NAMES.add(SHARED_FOLDERS_TABLE);
+		TABLE_NAMES.add(GROUPS_TABLE_NAME);
     }
     @Override
     public void onCreate(SQLiteDatabase db) {
@@ -63,10 +71,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		String createTable4 = "CREATE TABLE " +FOLDER_ACCESS_TABLE+ "(" +FOLDER_ACCESS_COL1+ " TEXT, " +FOLDER_ACCESS_COL2+ " INTEGER, " +
 				"FOREIGN KEY (" +FOLDER_ACCESS_COL1+ ") REFERENCES " +SHARED_FOLDERS_TABLE+ " (" +SHARED_FOLDERS_COL1+ ")," +
 				"FOREIGN KEY (" +FOLDER_ACCESS_COL2+ ") REFERENCES " +FRIENDS_TABLE_NAME+" (" +FRIENDS_COL1+ "));";
+		String createTable5 = "CREATE TABLE " +GROUPS_TABLE_NAME+ "(" +GROUPS_COL1+ " TEXT PRIMARY KEY, " +GROUPS_COL2+ " TEXT, "+
+				GROUPS_COL3+ " TEXT, " +GROUPS_COL4+ " TEXT);";
 		db.execSQL(createTable1);
         db.execSQL(createTable2);
         db.execSQL(createTable3);
         db.execSQL(createTable4);
+		db.execSQL(createTable5);
     }
 
     @Override
@@ -75,10 +86,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		String dropTable2 = "DROP TABLE IF EXISTS " + BLOCKED_TABLE_NAME;
 		String dropTable3 = "DROP TABLE IF EXISTS " + SHARED_FOLDERS_TABLE;
 		String dropTable4 = "DROP TABLE IF EXISTS " + FOLDER_ACCESS_TABLE;
+		String dropTable5 = "DROP TABLE IF EXISTS " + GROUPS_TABLE_NAME;
+
 		db.execSQL(dropTable1);
         db.execSQL(dropTable2);
         db.execSQL(dropTable3);
         db.execSQL(dropTable4);
+		db.execSQL(dropTable5);
         onCreate(db);
     }
 
@@ -323,7 +337,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		}
 		return result;
 	}
+	/**
+	 * Borra un amigo. Si este tenía acceso a alguna carpeta compartida se elimina de ellas.
+	 * @param name
+	 * @return
+	 */
+	public boolean deleteFriend(String name){
+		SQLiteDatabase db = getWritableDatabase();
+		Cursor user = db.query(FRIENDS_TABLE_NAME, new String[]{FRIENDS_COL1}, FRIENDS_COL2+"=?", new String[]{name},
+				null, null, null);
+		user.moveToNext();
+		String where = FOLDER_ACCESS_COL2+'='+user.getInt(0);
+		int result = db.delete(FOLDER_ACCESS_TABLE, where, null);
 
+		if (result == -1)
+			return false;
+		else{
+			removeData(name, FRIENDS_TABLE_NAME);
+			return true;
+		}
+	}
 
 	/**
 	 * Borra un amigo. Si este tenía acceso a alguna carpeta compartida se elimina de ellas.
@@ -346,5 +379,135 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		}
 	}
 
+
+	//Funciones relacionadas con los GRUPOS
+
+	/**
+	 * Añade un nuevo grupo a la base de datos junto con la lista de amigos que lo forman.
+	 * @param  name nombre del grupo
+	 * @param friends Lista de amigos del grupo en un string.
+	 * @return true si ha tenido éxito, false en caso contrario.
+	 */
+	public boolean addGroup(String name, String friends){
+		SQLiteDatabase db = this.getWritableDatabase();
+		ContentValues contentValues = new ContentValues();
+		contentValues.put(GROUPS_COL1, name);
+		contentValues.put(GROUPS_COL2, friends);
+		//contentValues.put(GROUPS_COL3, "null");
+		//contentValues.put(GROUPS_COL4, "null");
+		Log.d(TAG, "addData: Adding " + name + " to " + GROUPS_TABLE_NAME);
+		long result = db.insert(GROUPS_TABLE_NAME, null, contentValues);
+		if (result == -1)
+			return false;
+		else
+			return true;
+	}
+
+	/**
+	 * Añade ficheros a la lista de archivos compartidos de un grupo.
+	 * @param friendsNames Lista de nombres de los amigos a añadir.
+	 * @param nameGroup Nombre de la carpeta compartida.
+	 * @return true si la inserción ha tenido éxito. false en otro caso.
+	 */
+	public boolean addFiles2Group(ArrayList<String> friendsNames, String nameGroup){
+		SQLiteDatabase db = this.getWritableDatabase();
+		// Primero obtengo los id de los usuarios que se van a añadir:
+		String queryIDs = getUsersIDsQuery(friendsNames);
+		Cursor ids = db.rawQuery(queryIDs, null);
+
+		// Después, con un cursor a los ids voy insertando en la tabla de acceso:
+		ContentValues contentValues = new ContentValues();
+		long result = 0;
+		while (ids.moveToNext() && (result != -1)){
+			contentValues.clear();
+			contentValues.put(FOLDER_ACCESS_COL1, nameGroup);
+			contentValues.put(FOLDER_ACCESS_COL2, ids.getInt(0));
+			result = db.insert(FOLDER_ACCESS_TABLE, null, contentValues);
+		}
+		Log.d(TAG, "addData: Adding to " + FOLDER_ACCESS_TABLE + " rows:\n" + friendsNames);
+		if (result == -1)
+			return false;
+		else
+			return true;
+	}
+	/**
+	 * Añade amigos al grupo.
+	 * @param friendsNames Lista de nombres de los amigos a añadir.
+	 * @param nameGroup Nombre del grupo al que se van a añadir
+	 * @return true si la inserción ha tenido éxito. false en otro caso.
+	 */
+	public boolean addFriends2Group(ArrayList<String> friendsNames, String nameGroup){
+		SQLiteDatabase db = this.getWritableDatabase();
+		// Primero obtengo los id de los usuarios que se van a añadir:
+		String queryIDs = getUsersIDsQuery(friendsNames);
+		Cursor ids = db.rawQuery(queryIDs, null);
+
+		// Después, con un cursor a los ids voy insertando en la tabla de acceso:
+		ContentValues contentValues = new ContentValues();
+		long result = 0;
+		while (ids.moveToNext() && (result != -1)){
+			contentValues.clear();
+			contentValues.put(GROUPS_COL1, nameGroup);
+			contentValues.put(GROUPS_COL2, ids.getInt(0));
+			result = db.insert(GROUPS_TABLE_NAME, null, contentValues);
+		}
+		Log.d(TAG, "addData: Adding to " + GROUPS_TABLE_NAME + " rows:\n" + friendsNames);
+		if (result == -1)
+			return false;
+		else
+			return true;
+	}
+
+
+	/**
+	 * Borra amigos de la lista de acceso a un grupo.
+	 * @param nameGroup
+	 * @param friends
+	 * @return true si ha tenido éxito, false en caso contrario.
+	 */
+	public boolean removeFriendsFromGroup(String nameGroup, ArrayList<String> friends){
+		SQLiteDatabase db = this.getWritableDatabase();
+		// Primero obtengo los id de los usuarios a eliminar:
+		String queryIDs = getUsersIDsQuery(friends);
+
+		// monto subconsulta:
+		StringBuilder where = new StringBuilder();
+		where.append("\"");
+		where.append(nameGroup);
+		where.append("\"");
+		where.append(" = ");
+		where.append(FOLDER_ACCESS_COL1);
+		where.append(" AND ");
+		where.append(FOLDER_ACCESS_COL2);
+		where.append(" IN (");
+		where.append(queryIDs);
+		where.append(')');
+
+		// y finalmente el borrado:
+		int result = db.delete(GROUPS_TABLE_NAME, where.toString(), null);
+
+		if (result == -1)
+			return false;
+		else
+			return true;
+	}
+
+
+	/**
+	 * Borra un grupo.
+	 * @param nameGroup Nombre del grupo.
+	 * @return true si ha tenido éxito, false en caso contrario.
+	 */
+	public boolean removeGroup(String nameGroup){
+		SQLiteDatabase db = this.getWritableDatabase();
+		String[] args = new String[]{nameGroup};
+
+		int result = db.delete(GROUPS_TABLE_NAME, "name_group=?", args);
+
+		if (result == -1)
+			return false;
+		else
+			return true;
+	}
 
 }

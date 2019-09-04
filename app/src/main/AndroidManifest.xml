@@ -59,6 +59,12 @@
             android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden"/>
         <activity
+            android:name=".listGroupsActivity"
+            android:label="@string/title_activity_list_group"
+            android:theme="@style/NoActionBar"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
             android:name=".MainActivity"
             android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden">
