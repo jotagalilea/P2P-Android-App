@@ -1,6 +1,7 @@
 package com.example.samue.login;
 
 import android.content.Intent;
+import android.database.Cursor;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.lang.reflect.Array;
+import java.security.acl.Group;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +34,8 @@ public class friendsgroup extends AppCompatActivity {
     private ArrayList files;
     private String nameGroup;
     private Groups newGroup;
+    private DatabaseHelper helperGroup;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,11 +81,8 @@ public class friendsgroup extends AppCompatActivity {
 
                 newGroup= new Groups(nameGroup,R.drawable.icongroup,friendsSelected);
                 //Falta la implemenntacion de guardar los datos en la BBDD
-               // ArrayList<Friends> marcados = RVadapter.;
-               // String contenidoMarcados = "Marcados: ";
-               // for (Friends os : marcados){
-               //     contenidoMarcados += os.getTexto() + ", ";
-               // }
+                addGroup(nameGroup,friendsSelected);
+
                 Toast.makeText(getApplicationContext(), "Group "+ nameGroup + " has been created", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
                 startActivityForResult(intent, 1);
@@ -96,6 +97,53 @@ public class friendsgroup extends AppCompatActivity {
         listFriends.add(new Friends("Alba", R.drawable.cohete));
         listFriends.add(new Friends("Rupert", R.drawable.astronaura));
         return listFriends;
+    }
+
+    /**
+     * Bloqueo de un usuario. Se inserta en la BD y se recarga la IU y el arrayList.
+     * @param name nombre del usuario.
+     */
+    private void addGroup(String name, ArrayList<Friends> listFriends){
+        boolean inserted = helperGroup.addGroup(name, helperGroup.GROUPS_TABLE_NAME);
+        if (inserted)
+            loadGroups();
+    }
+
+    /**
+     * Desbloqueo de un usuario. Se borra de la BD y se recarga la IU y el arrayList.
+     * @param name nombre del usuario.
+     */
+    private void removeGroup(String name){
+        boolean removed = helperGroup.removeData(name, helperGroup.GROUPS_TABLE_NAME);
+        if (removed)
+            loadGroups();
+    }
+    /**
+     * Se recupera los datos de la tabla de bloqueados de la BD y se recarga el arrayList y la IU.
+     */
+    private void loadGroups(){
+        Cursor c = helperGroup.getData(helperGroup.GROUPS_TABLE_NAME);
+        friends.clear();
+
+        while(c.moveToNext())
+            friends.add(new Friends(c.getString(1), R.drawable.ic_launcher_foreground));
+        rvadapter = new RVadapter(friends);
+        recyclerView.setAdapter(rvadapter);
+    }
+
+    /**
+     * Averigua si existe un objeto Groups cuyo nombre coincida con nameGroup.
+     * @param nameGroup 	nombre del usuario que se busca.
+     * @param gr 	ArrayList en el que se busca.
+     * @return 		Objeto friends si existe, o null en caso contrario.
+     */
+    private Groups customListContains(String nameGroup, ArrayList<Groups> gr){
+        for(Groups g : gr){
+            if(g.getNameGroup().equals(nameGroup)){
+                return g;
+            }
+        }
+        return null;
     }
 
 
