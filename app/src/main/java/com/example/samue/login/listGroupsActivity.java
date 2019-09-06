@@ -1,25 +1,20 @@
 package com.example.samue.login;
 
-import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
-import android.widget.TextView;
+import android.widget.Toast;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 public class listGroupsActivity extends AppCompatActivity {
 
@@ -31,8 +26,8 @@ public class listGroupsActivity extends AppCompatActivity {
 
 
     Dialog mdialogCreate;
-    Dialog mdialogDelete;
-    EditText nameGroup;
+    EditText nameGroupText;
+    String nameGroup;
     Button bf;
 
 
@@ -40,6 +35,9 @@ public class listGroupsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_groups);
+        Toolbar toolbar = findViewById(R.id.listGroups_toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("GRUPOS");
         groupDatabaseHelper = new DatabaseHelper(this);
 
         ArrayList<Friends> listFriends= new ArrayList<>();
@@ -50,14 +48,13 @@ public class listGroupsActivity extends AppCompatActivity {
         loadGroupList();
         //listGroups.add(new Groups("grupo1",R.drawable.group,listFriends,username));
         //listGroups.add(new Groups("grupo2",R.drawable.group,listFriends,username));
-        //adapter = new GroupsAdapter(this, listGroups);
-        listView = findViewById(R.id.groups_list);
-        listView.setAdapter(adapter);
+
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
+                nameGroup = listGroups.get(i).getNameGroup();
+                final Groups group = listGroups.get(i);
                 final Dialog dialog = new Dialog(listGroupsActivity.this);
                 dialog.setContentView(R.layout.dialog_group);
                 dialog.show();
@@ -100,6 +97,40 @@ public class listGroupsActivity extends AppCompatActivity {
                 });
             }
         });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                nameGroup = listGroups.get(position).getNameGroup();
+                final Dialog deletedialog = new Dialog(listGroupsActivity.this);
+                deletedialog.setContentView(R.layout.dialog_deletegroup);
+                deletedialog.show();
+
+
+                Button yes = deletedialog.findViewById(R.id.delete_group_yes);
+                yes.setOnClickListener(new View.OnClickListener() {
+                    // Si se bloquea a un amigo este se borra de la lista de amigos.
+                    @Override
+                    public void onClick(View view) {
+                        //removeGroup(nameGroup);
+                        listGroups.remove(listGroups.get(position));
+                        groupDatabaseHelper.deleteGroup(nameGroup.toString(), groupDatabaseHelper.GROUPS_TABLE_NAME);
+                        Toast.makeText(getApplicationContext(),nameGroup + " se ha eliminado", Toast.LENGTH_SHORT).show();
+                        deletedialog.dismiss();
+                        loadGroupList();
+                    }
+                });
+
+                Button no = deletedialog.findViewById(R.id.delete_group_no);
+                no.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {deletedialog.dismiss();}
+                });
+                return true; //esto hay que ver que poner
+            }
+        });
+
+
+
         FloatingActionButton createGroup = findViewById(R.id.createGroup);
         createGroup.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -107,20 +138,28 @@ public class listGroupsActivity extends AppCompatActivity {
                 mdialogCreate = new Dialog(listGroupsActivity.this);
                 mdialogCreate.setContentView(R.layout.dialog_newgroup);
                 mdialogCreate.show();
-                nameGroup = (EditText) mdialogCreate.findViewById(R.id.nameGroup);
+                nameGroupText = (EditText) mdialogCreate.findViewById(R.id.nameGroup);
+
                 bf = (Button) mdialogCreate.findViewById(R.id.button_addFriends);
 
                 bf.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View view) {
                         mdialogCreate.dismiss();
                         Intent myIntent = new Intent(listGroupsActivity.this, friendsgroup.class);
-                        myIntent.putExtra("nameGroup", nameGroup.getText().toString());
+                        myIntent.putExtra("nameGroup", nameGroupText.getText().toString());
                         myIntent.putExtra("username",username);
                         startActivityForResult(myIntent, 3);
                         finish();
                     }
 
                 });
+            }
+        });
+        FloatingActionButton backFriends = findViewById(R.id.backFriends);
+        backFriends.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onBackPressed();
             }
         });
 
@@ -135,16 +174,24 @@ public class listGroupsActivity extends AppCompatActivity {
      */
     private void loadGroupList() {
         Cursor c = groupDatabaseHelper.getData(DatabaseHelper.GROUPS_TABLE_NAME);
-        listGroups = new ArrayList<Groups>();
-        while (c.moveToNext()){
-            ArrayList<Friends> friends=stringtoArrayListFriend(c.getString(1));
-            ArrayList<Friends> files=stringtoArrayList(c.getString(2));
-            ArrayList<Friends> owners=stringtoArrayListFriend(c.getString(3));
-            Groups g = new Groups(c.getString(0),R.drawable.icongroup, friends,files,owners,c.getString(4));
+        //Log.d("ALEX",c.getString(0));
+        if (listGroups != null){listGroups.clear();}
+        else {listGroups = new ArrayList<>();}
+
+        while (c.moveToNext()) {
+            ArrayList<Friends> friends = stringtoArrayListFriend(c.getString(1));
+            ArrayList<Friends> files = stringtoArrayList(c.getString(2));
+            ArrayList<Friends> owners = stringtoArrayListFriend(c.getString(3));
+            Groups g = new Groups(c.getString(0), R.drawable.icongroup, friends, files, owners, c.getString(4));
             listGroups.add(g);
         }
+        adapter = new GroupsAdapter(this, listGroups);
+        listView = findViewById(R.id.groups_list);
+        listView.setAdapter(adapter);
+
     }
     private ArrayList<Friends> stringtoArrayListFriend(String friends){
+        if (friends == null){return new ArrayList<>();}
         ArrayList<Friends> resultado= new ArrayList<>();
         String[] friendsSeparate = friends.split(",");
         for (int i=0; i<friendsSeparate.length; i++){
@@ -153,6 +200,9 @@ public class listGroupsActivity extends AppCompatActivity {
         return resultado;
     }
     private ArrayList<Friends> stringtoArrayList(String files){
+        if (files == null){
+            return new ArrayList<>();
+        }
         ArrayList resultado= new ArrayList();
         String[] filesSeparate = files.split(",");
         for (int i=0; i<filesSeparate.length; i++){
@@ -161,6 +211,7 @@ public class listGroupsActivity extends AppCompatActivity {
         return resultado;
     }
 
+    private void removeGroup(String nameGroup){}
 
 
 

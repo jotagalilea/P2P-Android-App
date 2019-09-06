@@ -57,7 +57,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public DatabaseHelper(Context context){
         super(context, DB_NAME, null, 1);
-        // context.deleteDatabase(DB_NAME); //para borrar la base de datos si hace falta
+         //context.deleteDatabase(DB_NAME); //para borrar la base de datos si hace falta
         TABLE_NAMES.add(FRIENDS_TABLE_NAME);
         TABLE_NAMES.add(BLOCKED_TABLE_NAME);
         TABLE_NAMES.add(FOLDER_ACCESS_TABLE);
@@ -245,22 +245,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	}
 
 
-	/**
-	 * Método para eliminar datos de las tablas FRIENDS_TABLE_NAME o bien BLOCKED_TABLE_NAME.
-	 * @param name String con el nombre del eliminado.
-	 * @param table Tabla seleccionada.
-	 * @return true si ha tenido éxito, false en caso contrario.
-	 */
+    /**
+     * Método para eliminar datos de las tablas FRIENDS_TABLE_NAME o bien BLOCKED_TABLE_NAME.
+     * @param name String con el nombre del eliminado.
+     * @param table Tabla seleccionada.
+     * @return true si ha tenido éxito, false en caso contrario.
+     */
     public boolean removeData(String name, String table){
-		SQLiteDatabase db = this.getWritableDatabase();
-		String[] args = new String[]{name};
+        SQLiteDatabase db = this.getWritableDatabase();
+        String[] args = new String[]{name};
 
-		int result = db.delete(table, "name=?", args);
+        int result = db.delete(table, "name=?", args);
 
-		if (result == -1)
-			return false;
-		else
-			return true;
+        if (result == -1)
+            return false;
+        else
+            return true;
     }
 
 
@@ -354,7 +354,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		if (result == -1)
 			return false;
 		else{
-			removeData(name, FRIENDS_TABLE_NAME);
+			deleteGroup(name, FRIENDS_TABLE_NAME);
 			return true;
 		}
 	}
@@ -372,11 +372,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		ContentValues contentValues = new ContentValues();
 		contentValues.put(GROUPS_COL1, name);
 		contentValues.put(GROUPS_COL2, friends);
-		//contentValues.put(GROUPS_COL3, "null");
-		//contentValues.put(GROUPS_COL4, "null");
+		//contentValues.put(GROUPS_COL3, name);
+		//contentValues.put(GROUPS_COL4, name);
 		contentValues.put(GROUPS_COL5,administrator);
 		Log.d(TAG, "addData: Adding " + name + " to " + GROUPS_TABLE_NAME);
 		long result = db.insert(GROUPS_TABLE_NAME, null, contentValues);
+
 		if (result == -1)
 			return false;
 		else
@@ -489,5 +490,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		else
 			return true;
 	}
+
+    /**
+     * Método para eliminar datos de las tablas FRIENDS_TABLE_NAME o bien BLOCKED_TABLE_NAME.
+     * @param name String con el nombre del eliminado.
+     * @param table Tabla seleccionada.
+     * @return true si ha tenido éxito, false en caso contrario.
+     */
+    public boolean deleteGroup(String name, String table){
+        SQLiteDatabase db = this.getWritableDatabase();
+        String[] args = new String[]{name};
+        int result = db.delete(table, "name_Group=?", args);
+
+        if (result == -1)
+            return false;
+        else
+            return true;
+    }
+
 
 }

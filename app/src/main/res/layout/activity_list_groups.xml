@@ -34,26 +34,24 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/fab_margin"
-        android:layout_marginStart="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="168dp"
         android:src="@drawable/plus"
         app:backgroundTint="@android:color/holo_blue_light"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/removeGroup"
+        android:id="@+id/backFriends"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/fab_margin"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
-        android:src="@android:drawable/ic_menu_delete"
-        android:tint="#FFFFFF"
-        app:backgroundTint="#FF0000"
-        app:backgroundTintMode="src_over"
+        android:layout_marginEnd="272dp"
+        android:layout_marginBottom="168dp"
+        android:src="@drawable/backfriend"
+        app:backgroundTint="@android:color/holo_blue_light"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:rippleColor="#FFFFFF"
         tools:visibility="visible" />
 
@@ -65,7 +63,9 @@
         android:layout_marginEnd="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/listGroups_toolbar" />
+        app:layout_constraintTop_toBottomOf="@id/listGroups_toolbar"
+        app:layout_constraintVertical_bias="0.0" />
 
 </android.support.constraint.ConstraintLayout>

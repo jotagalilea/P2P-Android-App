@@ -44,6 +44,8 @@ public class friendsgroup extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.group_toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Selecciona los amigos");
+        helperGroup = new DatabaseHelper(this);
+
 
         Bundle extras = getIntent().getExtras();
         nameGroup = extras.getString("nameGroup");
@@ -75,15 +77,21 @@ public class friendsgroup extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                boolean add;
                 friendsSelected = rvadapter.obtenerSeleccionados();
 
                 newGroup = new Groups(nameGroup, R.drawable.icongroup, friendsSelected, administrator);
                 //Falta la implemenntacion de guardar los datos en la BBDD
-                addGroupBBDD(nameGroup, friendsSelected, administrator);
+                add = addGroupBBDD(nameGroup, friendsSelected, administrator);
+                if (add) {
+                    Toast.makeText(getApplicationContext(), "Group " + nameGroup + " has been created", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
+                    startActivityForResult(intent, 1);
 
-                Toast.makeText(getApplicationContext(), "Group " + nameGroup + " has been created", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
-                startActivityForResult(intent, 1);
+                }
+                else {
+                    Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
+                }
                 finish();
             }
         });
@@ -98,18 +106,15 @@ public class friendsgroup extends AppCompatActivity {
         return listFriends;
     }
 
-    /**
-     * Bloqueo de un usuario. Se inserta en la BD y se recarga la IU y el arrayList.
-     *
-     * @param name nombre del usuario.
-     */
-    private void addGroupBBDD(String name, ArrayList<Friends> listFriends, String administrator) {
-        String listFriendStrings = new String ();
-        listFriendStrings=arrayListToString(listFriends);
+
+    private boolean addGroupBBDD(String name, ArrayList<Friends> listFriends, String administrator) {
+        String listFriendStrings = arrayListToString(listFriends);
 
         boolean inserted = helperGroup.addGroup(name, listFriendStrings, administrator);
         if (inserted)
-            loadGroups();
+            return inserted;
+        else
+            return false;
     }
 
     /**
@@ -118,7 +123,7 @@ public class friendsgroup extends AppCompatActivity {
      * @param name nombre del usuario.
      */
     private void removeGroup(String name) {
-        boolean removed = helperGroup.removeData(name, helperGroup.GROUPS_TABLE_NAME);
+        boolean removed = helperGroup.deleteGroup(name, helperGroup.GROUPS_TABLE_NAME);
         if (removed)
             loadGroups();
     }
