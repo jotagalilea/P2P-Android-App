@@ -37,7 +37,7 @@ public class listGroupsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_list_groups);
         Toolbar toolbar = findViewById(R.id.listGroups_toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("GRUPOS");
+        getSupportActionBar().setTitle("Grupos");
         groupDatabaseHelper = new DatabaseHelper(this);
 
         ArrayList<Friends> listFriends= new ArrayList<>();
@@ -57,6 +57,7 @@ public class listGroupsActivity extends AppCompatActivity {
                 final Groups group = listGroups.get(i);
                 final Dialog dialog = new Dialog(listGroupsActivity.this);
                 dialog.setContentView(R.layout.dialog_group);
+
                 dialog.show();
 
                 //Boton ver archivos del dialogo del grupo seleccionado
@@ -68,7 +69,7 @@ public class listGroupsActivity extends AppCompatActivity {
                          * Se abre la actividad que permite ver, añadir y eliminar algún amigo
                          * del grupo seleccionado.
                          */
-                        Intent intent = new Intent(listGroupsActivity.this, FriendsGroupActivity.class);
+                        Intent intent = new Intent(listGroupsActivity.this, friendsGroupActivity.class);
                         //intent.putExtra("folderName", folder_name);
                         //intent.putExtra("users", foldersAccess.get(folder_name));
                         //intent.putExtra("friends", al_friends);
@@ -87,11 +88,12 @@ public class listGroupsActivity extends AppCompatActivity {
                          * de la lista de acceso a la carpeta seleccionada. Si se borran todos
                          * entonces se elimina la carpeta de la aplicación.
                          */
-                        Intent intent = new Intent(listGroupsActivity.this, FilesGroupActivity.class);
-                        //intent.putExtra("folderName", folder_name);
-                        //intent.putExtra("users", foldersAccess.get(folder_name));
-                        //intent.putExtra("friends", al_friends);
                         dialog.dismiss();
+                        Intent intent = new Intent(listGroupsActivity.this, friendsGroupActivity.class);
+                        intent.putExtra("nameGroup", group.getNameGroup());
+                        intent.putExtra("friends", group.getListFriends());
+                        intent.putExtra("administrator", group.getAdministrador());
+                        intent.putExtra("username",username);
                         startActivityForResult(intent, 1);
                     }
                 });
