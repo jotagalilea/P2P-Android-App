@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -31,8 +32,16 @@ public class Recursos extends AppCompatActivity {
 
 		listaNombresArchivos = extras.getParcelableArrayList("lista");
 
-		boolean listener = extras.getBoolean("listener");
 		final String sendTo = extras.getString("sendTo");
+
+		Toolbar toolbar = findViewById(R.id.resources_toolbar);
+		setSupportActionBar(toolbar);
+		if (sendTo!=null)
+			getSupportActionBar().setTitle("Archivos de "+sendTo);
+		else
+			getSupportActionBar().setTitle("Mis archivos compartidos");
+
+		boolean listener = extras.getBoolean("listener");
 		final boolean isFS = extras.getBoolean("isFS", false);
 		final String folderName;
 		if (isFS)

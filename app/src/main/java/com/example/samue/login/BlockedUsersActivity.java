@@ -176,8 +176,9 @@ public class BlockedUsersActivity extends AppCompatActivity {
 	 */
 	private void addBlockedUser(String name){
 		boolean inserted = helper.addData(name, helper.BLOCKED_TABLE_NAME);
-		if (inserted)
+		if (inserted) {
 			loadBlockedUsers();
+		}
 	}
 
 

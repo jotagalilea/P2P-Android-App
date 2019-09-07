@@ -4,6 +4,7 @@ package com.example.samue.login;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.CursorIndexOutOfBoundsException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
@@ -317,9 +318,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 				al_friends = new ArrayList<>(4);
 				result.put(folder, al_friends);
 			}
-			String friend = getUserName(friendID);
-			al_friends.add(friend);
-			lastFolder = folder;
+			try {
+				String friend = getUserName(friendID);
+				al_friends.add(friend);
+				lastFolder = folder;
+			}
+			catch (CursorIndexOutOfBoundsException e){ e.printStackTrace();}
 		}
 		return result;
 	}

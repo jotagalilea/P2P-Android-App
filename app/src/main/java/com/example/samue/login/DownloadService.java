@@ -105,7 +105,6 @@ public class DownloadService extends Service{
 
 
 	public void stop(){
-		//TODO: No sé si haría falta desvincular todos los clientes. Interrumpir hilos si los hay.
 		this.stopSelf();
 	}
 
@@ -133,7 +132,8 @@ public class DownloadService extends Service{
 					public void run() {
 						if (hasFreeThreads() && !msgQueue.isEmpty()){
 							/* Si hay hilos disponibles se coge uno de los mensajes de petición de archivo
-							 * previamente preparado y se transmite la solicitud.
+							 * previamente preparado y se transmite la solicitud. Hago esta comprobación cada
+							 * 10 segundos para interferir lo menos posible.
 							 */
 							Pair<String,JSONObject> p = msgQueue.poll();
 							String sendTo = p.first;
@@ -177,8 +177,12 @@ public class DownloadService extends Service{
 						 * hilo libre. Sólo cuando esto sucede es cuando se transmite una de las solicitudes en cola.
 						 */
 						else
-							notifyAndSetJson();
-
+							try {
+								notifyAndSetJson();
+							}
+							catch (NullPointerException e){
+								e.printStackTrace();
+							}
 
 						newDownload = false;
 						newMsgReceived = false;
@@ -208,6 +212,9 @@ public class DownloadService extends Service{
 		}
 
 
+		/**
+		 * Arranca un hilo de descarga.
+		 */
 		private void startDownload(){
 			Object monitor = new Object();
 			dl.setRunning();
@@ -242,28 +249,29 @@ public class DownloadService extends Service{
 			Pair<Object,ManagerThread.DownloadThread> dl_Pair = hm_downloads.get(dl_fileName);
 			Object monitor = dl_Pair.first;
 			boolean success = false;
-			try{
-				synchronized (monitor){
+			/*try{
+				/*synchronized (monitor){
 					while (newMsgReceived)
 						monitor.wait();
-
+				*/
 					DownloadThread th = dl_Pair.second;
 					th.interrupt();
 					hm_downloads.remove(dl_fileName);
+					--threadsRunning;
 					File f = new File(dl_path);
 					f.delete();
 					success = true;
-				}
+				/*}
 			}
 			catch (InterruptedException e){ e.printStackTrace();}
-
+			*/
 			return success;
 		}
 
 
 
 		/**
-		 * Clase dedicada a almacenar el hilo en el que se ejecuta una descarga.
+		 * Clase que implementa el hilo en el que se ejecuta una descarga.
 		 */
 		private class DownloadThread extends Thread{
 			private JSONObject json;
@@ -331,19 +339,10 @@ public class DownloadService extends Service{
 					// Si se pidió una previsualización se abre el archivo:
 					boolean isPreview = jsonMsg.getBoolean(Utils.PREVIEW_SENT);
 					if (isPreview){
-						MimeTypeMap myMime = MimeTypeMap.getSingleton();
-						Intent newIntent = new Intent(Intent.ACTION_VIEW);
-						String mimeType = myMime.getMimeTypeFromExtension(name.substring(name.lastIndexOf('.')+1));
-						newIntent.setDataAndType(Uri.fromFile(file), mimeType);
-						newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-						try {
-							getApplicationContext().startActivity(newIntent);
-						} catch (ActivityNotFoundException e) {
-							Toast.makeText(getApplicationContext(), "No se puede abrir este tipo de archivo", Toast.LENGTH_LONG).show();
-						}
+						Utils.openFile(name, file, getApplicationContext());
 					}
 
-					this.interrupt();
+					//this.interrupt();
 				} catch(Exception e){
 					e.printStackTrace();
 					dl_timer.cancel();

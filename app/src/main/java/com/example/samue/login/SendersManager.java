@@ -81,12 +81,18 @@ public class SendersManager extends Thread {
 		return sendersQueue.isEmpty();
 	}
 
-	public synchronized void notifyFinishedUpload(){
-		newUpload = true;
-		monitor.notify();
+	public void notifyFinishedUpload(){
+		synchronized (monitor){
+			newUpload = true;
+			monitor.notify();
+		}
 	}
 
 	public boolean queueFull(){
-		return sendersQueue.size() == QUEUE_MAX_SIZE;
+		return sendersQueue.size() >= QUEUE_MAX_SIZE;
+	}
+
+	public boolean hasSender(String name){
+		return sendersQueue.containsKey(name);
 	}
 }

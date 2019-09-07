@@ -245,4 +245,14 @@ public class ArchiveExplorer extends AppCompatActivity {
 		adaptador = new AEArrayAdapter(this, android.R.layout.simple_list_item_1, listaNombresArchivos);
 		listaItems.setAdapter(adaptador);
 	}
+
+
+	@Override
+	public void onBackPressed(){
+		if (!currentFolder.equalsIgnoreCase(directorioRaiz)) {
+			verArchivosDirectorio(new File(currentFolder).getParent());
+		}
+		else
+			super.onBackPressed();
+	}
 }

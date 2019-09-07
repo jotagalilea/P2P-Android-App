@@ -11,25 +11,12 @@
         android:id="@+id/sf_toolbar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
+        android:background="@color/colorPrimaryDark"
         android:minHeight="?attr/actionBarSize"
         android:theme="?attr/actionBarTheme"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"></android.support.v7.widget.Toolbar>
-
-    <TextView
-        android:id="@+id/titleText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:text="@string/see_shared_folders_title"
-        android:textSize="24sp"
-        app:layout_constraintBottom_toBottomOf="@+id/sf_toolbar"
-        app:layout_constraintEnd_toEndOf="@+id/sf_toolbar"
-        app:layout_constraintStart_toStartOf="@+id/sf_toolbar"
-        app:layout_constraintTop_toTopOf="@+id/sf_toolbar" />
 
     <ListView
         android:id="@+id/shared_folders_list"

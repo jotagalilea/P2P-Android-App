@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -45,6 +46,10 @@ public class SharedFoldersActivity extends AppCompatActivity {
 		sharedFolders = (HashMap<String,ArrayList<String>>) intent.getSerializableExtra("sharedFolders");
 		foldersAccess = (HashMap<String,ArrayList<String>>) intent.getSerializableExtra("foldersAccess");
 		al_friends = (ArrayList<Friends>) intent.getSerializableExtra("friends");
+
+		Toolbar myToolbar = findViewById(R.id.sf_toolbar);
+		setSupportActionBar(myToolbar);
+		getSupportActionBar().setTitle("Carpetas compartidas");
 
 		loadFoldersNamesAndPrepareAdapter();
 

@@ -13,10 +13,10 @@
         android:theme="@style/AppBarOverlay">
 
         <android.support.v7.widget.Toolbar
-            android:id="@+id/download_toolbar"
+            android:id="@+id/resources_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
+            android:background="@color/colorPrimaryDark"
             app:popupTheme="@style/PopupOverlay" />
 
     </android.support.design.widget.AppBarLayout>
