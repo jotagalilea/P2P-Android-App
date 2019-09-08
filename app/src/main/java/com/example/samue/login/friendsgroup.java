@@ -36,6 +36,8 @@ public class friendsgroup extends AppCompatActivity {
     private String administrator;
     private Groups newGroup;
     private DatabaseHelper helperGroup;
+    public String username;
+    static DatabaseHelper groupDatabaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,18 +47,16 @@ public class friendsgroup extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Selecciona los amigos");
         helperGroup = new DatabaseHelper(this);
+        groupDatabaseHelper = new DatabaseHelper(this);
 
 
         Bundle extras = getIntent().getExtras();
         nameGroup = extras.getString("nameGroup");
         administrator = extras.getString("username");
+        username =extras.getString("username");
 
-
-        //ArrayList<Friends> friends= new ArrayList<>();
-        //llamar a base de datos u cargar amigos de verdad, no lista estatica
-        friends = listadeamigos();
+        friendslist();
         friendsSelected = new ArrayList<>();
-
 
         recyclerView = (RecyclerView) findViewById(R.id.rv_friendsgroup);
 
@@ -72,7 +72,6 @@ public class friendsgroup extends AppCompatActivity {
         rvadapter = new RVadapter(friends);
         recyclerView.setAdapter(rvadapter);
 
-
         FloatingActionButton button = findViewById(R.id.createGroup);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -81,13 +80,12 @@ public class friendsgroup extends AppCompatActivity {
                 friendsSelected = rvadapter.obtenerSeleccionados();
 
                 newGroup = new Groups(nameGroup, R.drawable.icongroup, friendsSelected, administrator);
-                //Falta la implemenntacion de guardar los datos en la BBDD
                 add = addGroupBBDD(nameGroup, friendsSelected, administrator);
                 if (add) {
                     Toast.makeText(getApplicationContext(), "Group " + nameGroup + " has been created", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
+                    intent.putExtra("username", username);
                     startActivityForResult(intent, 1);
-
                 }
                 else {
                     Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
@@ -97,16 +95,16 @@ public class friendsgroup extends AppCompatActivity {
         });
     }
 
-    // ...
-    public ArrayList<Friends> listadeamigos() {
-        ArrayList<Friends> listFriends = new ArrayList<>();
-        listFriends.add(new Friends("Alex", R.drawable.astronaura));
-        listFriends.add(new Friends("Alba", R.drawable.cohete));
-        listFriends.add(new Friends("Rupert", R.drawable.astronaura));
-        return listFriends;
+    // cargar lista de amigos
+    public void friendslist() {
+        Cursor data = groupDatabaseHelper.getData(DatabaseHelper.FRIENDS_TABLE_NAME);
+        friends = new ArrayList<>();
+        while(data.moveToNext()){
+            friends.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
+        }
     }
 
-
+    //añadir el grupo creado a la BBDD
     private boolean addGroupBBDD(String name, ArrayList<Friends> listFriends, String administrator) {
         String listFriendStrings = arrayListToString(listFriends);
 
@@ -117,20 +115,17 @@ public class friendsgroup extends AppCompatActivity {
             return false;
     }
 
-    /**
-     * Desbloqueo de un usuario. Se borra de la BD y se recarga la IU y el arrayList.
-     *
-     * @param name nombre del usuario.
-     */
+
+
+
+   // ----------------------a partir de aqui revisar que esto no sobre-------------------
+
     private void removeGroup(String name) {
         boolean removed = helperGroup.deleteGroup(name, helperGroup.GROUPS_TABLE_NAME);
         if (removed)
             loadGroups();
     }
 
-    /**
-     * Se recupera los datos de la tabla de bloqueados de la BD y se recarga el arrayList y la IU.
-     */
     private void loadGroups() {
         Cursor c = helperGroup.getData(helperGroup.GROUPS_TABLE_NAME);
         friends.clear();
@@ -141,12 +136,13 @@ public class friendsgroup extends AppCompatActivity {
         recyclerView.setAdapter(rvadapter);
     }
 
+    //usar esta funcion para comprobar que no se crea un grupo igual al que ya pertenezca
     /**
      * Averigua si existe un objeto Groups cuyo nombre coincida con nameGroup.
      *
-     * @param nameGroup nombre del usuario que se busca.
+     * @param nameGroup nombre del grupo que se busca.
      * @param gr        ArrayList en el que se busca.
-     * @return Objeto friends si existe, o null en caso contrario.
+     * @return Objeto group si existe, o null en caso contrario.
      */
     private Groups customListContains(String nameGroup, ArrayList<Groups> gr) {
         for (Groups g : gr) {
@@ -157,6 +153,7 @@ public class friendsgroup extends AppCompatActivity {
         return null;
     }
 
+    //pasar de un array lists de amigos a un string
     private String arrayListToString(ArrayList<Friends> listfriend) {
 
         String myString ="";
@@ -168,8 +165,5 @@ public class friendsgroup extends AppCompatActivity {
          }
         return myString;
     }
-
-
-
 }
 

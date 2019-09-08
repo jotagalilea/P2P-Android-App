@@ -1,12 +1,16 @@
 package com.example.samue.login;
 
+import android.app.Dialog;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -20,8 +24,10 @@ public class friendsGroupActivity extends AppCompatActivity {
     private String adminGroup;
     static DatabaseHelper friendsGroupDatabaseHelper;
 
-    FloatingActionButton deleteFriend = findViewById(R.id.deleteFriends);
-    FloatingActionButton addFriend = findViewById(R.id.addFriends);
+    FloatingActionButton deleteFriend;
+    FloatingActionButton addFriend;
+    String nameFriend;
+    String friendsupdate;
 
 
 
@@ -32,33 +38,69 @@ public class friendsGroupActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.listGroups_toolbar);
         setSupportActionBar(toolbar);
         friendsGroupDatabaseHelper = new DatabaseHelper(this);
+        deleteFriend = findViewById(R.id.deleteFriends);
+        addFriend = findViewById(R.id.addFriends);
         isadmin();
         listFriends= new ArrayList<Friends>();
         loadFriendsList();
-        
+
+
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                nameFriend = listFriends.get(position).getNombre();
+
+                final Dialog deletedialog = new Dialog(friendsGroupActivity.this);
+                deletedialog.setContentView(R.layout.dialog_deletefriendgroup);
+                deletedialog.show();
+
+
+                Button yes = deletedialog.findViewById(R.id.delete_friend_yes);
+                yes.setOnClickListener(new View.OnClickListener() {
+
+                    @Override
+                    public void onClick(View view) {
+                        //removeGroup(nameGroup);
+                        listFriends.remove(listFriends.get(position));
+                        friendsupdate=arrayListToString(listFriends);
+                        friendsGroupDatabaseHelper.deleteFriendToGroup(groupname,friendsupdate, friendsGroupDatabaseHelper.GROUPS_TABLE_NAME);
+                        Toast.makeText(getApplicationContext(),nameFriend + " se ha eliminado", Toast.LENGTH_SHORT).show();
+                        deletedialog.dismiss();
+                        reloadlistview(listFriends);
+                        
+                    }
+                });
+
+                Button no = deletedialog.findViewById(R.id.delete_friend_no);
+                no.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {deletedialog.dismiss();}
+                });
+                return true; //esto hay que ver que poner
+            }
+        });
+
 
     }
 
     private void loadFriendsList() {
+        String friendstmp;
         Bundle extras = getIntent().getExtras();
-        listFriends = (ArrayList<Friends>) getIntent().getSerializableExtra("friends");
         username = extras.getString("username");
         groupname = extras.getString("nameGroup");
         adminGroup = extras.getString("administrator");
+        friendstmp=extras.getString("friends");
+        listFriends=stringtoArrayListFriend(friendstmp);
 
-        Cursor c = friendsGroupDatabaseHelper.getData(DatabaseHelper.GROUPS_TABLE_NAME);
-        //Log.d("ALEX",c.getString(0));
-        if (listFriends != null){listFriends.clear();}
-        else {listFriends = new ArrayList<>();}
-
-        while (c.moveToNext()) {
-            ArrayList<Friends> friends = stringtoArrayListFriend(c.getString(1));
-            listFriends = friends;
-        }
         adapter = new FriendsAdapter(this, listFriends);
         listView = findViewById(R.id.listfriendgroups);
         listView.setAdapter(adapter);
 
+    }
+    private void reloadlistview(ArrayList<Friends> friendsreload){
+        adapter = new FriendsAdapter(this, friendsreload);
+        listView = findViewById(R.id.listfriendgroups);
+        listView.setAdapter(adapter);
     }
 
     private ArrayList<Friends> stringtoArrayListFriend(String friends){
@@ -69,6 +111,19 @@ public class friendsGroupActivity extends AppCompatActivity {
             resultado.add(new Friends(friendsSeparate[i],R.drawable.astronaura));
         }
         return resultado;
+    }
+
+    //pasar de un array lists de amigos a un string
+    private String arrayListToString(ArrayList<Friends> listfriend) {
+
+        String myString ="";
+        for (int i = 0; i<listfriend.size();i++){
+            myString = myString + listfriend.get(i).getNombre();
+            if (i < (listfriend.size()-1)){
+                myString = myString + ",";
+            }
+        }
+        return myString;
     }
 
     public void isadmin(){

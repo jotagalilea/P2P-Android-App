@@ -41,14 +41,10 @@ public class listGroupsActivity extends AppCompatActivity {
         groupDatabaseHelper = new DatabaseHelper(this);
 
         ArrayList<Friends> listFriends= new ArrayList<>();
-        listFriends.add(new Friends("Alex", R.drawable.astronaura));
-        listFriends.add(new Friends("Alba", R.drawable.cohete));
-        listFriends.add(new Friends("Rupert", R.drawable.astronaura));
         listGroups= new ArrayList<Groups>();
+        Bundle extras = getIntent().getExtras();
+        username=extras.getString("username");
         loadGroupList();
-        //listGroups.add(new Groups("grupo1",R.drawable.group,listFriends,username));
-        //listGroups.add(new Groups("grupo2",R.drawable.group,listFriends,username));
-
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -79,19 +75,19 @@ public class listGroupsActivity extends AppCompatActivity {
                 });
 
                 //Boton ver amigos del dialogo del grupo seleccionado
-                Button seeUsers = dialog.findViewById(R.id.friends_button);
-                seeUsers.setOnClickListener(new View.OnClickListener() {
+                Button seeFriends = dialog.findViewById(R.id.friends_button);
+                seeFriends.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         /*
                          * Se abre la actividad que permite ver, añadir y eliminar algún amigo
-                         * de la lista de acceso a la carpeta seleccionada. Si se borran todos
+                         * de la lista de acceso al grupo seleccionado. Si se borran todos
                          * entonces se elimina la carpeta de la aplicación.
                          */
                         dialog.dismiss();
                         Intent intent = new Intent(listGroupsActivity.this, friendsGroupActivity.class);
                         intent.putExtra("nameGroup", group.getNameGroup());
-                        intent.putExtra("friends", group.getListFriends());
+                        intent.putExtra("friends", arrayListToString(group.getListFriends()));
                         intent.putExtra("administrator", group.getAdministrador());
                         intent.putExtra("username",username);
                         startActivityForResult(intent, 1);
@@ -115,7 +111,7 @@ public class listGroupsActivity extends AppCompatActivity {
                     public void onClick(View view) {
                         //removeGroup(nameGroup);
                         listGroups.remove(listGroups.get(position));
-                        groupDatabaseHelper.deleteGroup(nameGroup.toString(), groupDatabaseHelper.GROUPS_TABLE_NAME);
+                        groupDatabaseHelper.deleteGroup(nameGroup, groupDatabaseHelper.GROUPS_TABLE_NAME);
                         Toast.makeText(getApplicationContext(),nameGroup + " se ha eliminado", Toast.LENGTH_SHORT).show();
                         deletedialog.dismiss();
                         loadGroupList();
@@ -182,7 +178,7 @@ public class listGroupsActivity extends AppCompatActivity {
 
         while (c.moveToNext()) {
             ArrayList<Friends> friends = stringtoArrayListFriend(c.getString(1));
-            ArrayList<Friends> files = stringtoArrayList(c.getString(2));
+            ArrayList files = stringtoArrayList(c.getString(2));
             ArrayList<Friends> owners = stringtoArrayListFriend(c.getString(3));
             Groups g = new Groups(c.getString(0), R.drawable.icongroup, friends, files, owners, c.getString(4));
             listGroups.add(g);
@@ -201,7 +197,7 @@ public class listGroupsActivity extends AppCompatActivity {
         }
         return resultado;
     }
-    private ArrayList<Friends> stringtoArrayList(String files){
+    private ArrayList stringtoArrayList(String files){
         if (files == null){
             return new ArrayList<>();
         }
@@ -212,11 +208,34 @@ public class listGroupsActivity extends AppCompatActivity {
         }
         return resultado;
     }
+    private String ArrayListToString (ArrayList list){
+        String resultado =null;
+        for (int i=0; i<list.size(); i++){
+            resultado=resultado + list.get(i).toString();
+        }
+        return resultado;
+    }
+    private String ArrayListFriendToString (ArrayList<Friends> list){
+        String resultado ="";
+        for (int i=0; i<list.size(); i++){
+            resultado=resultado + list.get(i).getNombre();
+        }
+        return resultado;
+    }
 
     private void removeGroup(String nameGroup){}
 
+    //pasar de un array lists de amigos a un string
+    private String arrayListToString(ArrayList<Friends> listfriend) {
 
-
-
+        String myString ="";
+        for (int i = 0; i<listfriend.size();i++){
+            myString = myString + listfriend.get(i).getNombre();
+            if (i < (listfriend.size()-1)){
+                myString = myString + ",";
+            }
+        }
+        return myString;
+    }
 
 }

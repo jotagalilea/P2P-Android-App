@@ -492,7 +492,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	}
 
     /**
-     * Método para eliminar datos de las tablas FRIENDS_TABLE_NAME o bien BLOCKED_TABLE_NAME.
+     * Método para eliminar un grupo de la tabla
      * @param name String con el nombre del eliminado.
      * @param table Tabla seleccionada.
      * @return true si ha tenido éxito, false en caso contrario.
@@ -507,6 +507,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         else
             return true;
     }
+
+	/**
+	 * Método para eliminar un amigo de un grupo.
+	 * @param name String con el nombre del eliminado.
+	 * @param table Tabla seleccionada.
+	 * @return true si ha tenido éxito, false en caso contrario.
+	 */
+	public boolean deleteFriendToGroup(String nameGroup,String friendsnews, String table){
+		SQLiteDatabase db = this.getWritableDatabase();
+		String[] args = new String[]{nameGroup};
+		ContentValues cv = new ContentValues();
+		cv.put("friends",friendsnews);
+		int result = db.update(table,cv,"name_group=?",args);
+
+		if (result == -1)
+			return false;
+		else
+			return true;
+	}
+
 
 
 }

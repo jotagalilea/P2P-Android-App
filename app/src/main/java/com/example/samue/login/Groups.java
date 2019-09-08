@@ -41,7 +41,7 @@ public class Groups {
 
     public ArrayList<Friends> getListOwners() {return this.listOwners;}
 
-    public String getAdministrador() { return administrator;}
+    public String getAdministrador() { return this.administrator;}
 
     @Override
     public boolean equals(Object o) {
