@@ -14,10 +14,12 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -58,7 +60,7 @@ public class DownloadManagerActivity extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_download_manager);
-		Toolbar toolbar = findViewById(R.id.download_toolbar);
+		Toolbar toolbar = findViewById(R.id.resources_toolbar);
 		setSupportActionBar(toolbar);
 		getSupportActionBar().setTitle("Descargas");
 
@@ -88,8 +90,8 @@ public class DownloadManagerActivity extends AppCompatActivity {
 					dialog.setContentView(R.layout.dialog_canceldownload);
 					dialog.show();
 
-					Button yes = dialog.findViewById(R.id.confirm_cancel_yes);
-					yes.setOnClickListener(new View.OnClickListener() {
+					Button cancelButton = dialog.findViewById(R.id.button_cancel);
+					cancelButton.setOnClickListener(new View.OnClickListener() {
 						@Override
 						public void onClick(View view) {
 							dialog.dismiss();
@@ -99,12 +101,13 @@ public class DownloadManagerActivity extends AppCompatActivity {
 								json.put(Utils.NAME, dl.getFileName());
 								json.put(Utils.CANCEL_DL, true);
 								Profile.pnRTCClient.transmit(dl.getFriend(), json);
+								//Profile.pnRTCClient.closeConnection(dl.getFriend());
 								if (dl.isRunning()) {
 									downloadService.stopDownload(dl.getPath(), dl.getFileName());
 									dl.setStopped();
-									al_downloads.remove(dl);
 									dl.deleteFile();
 								}
+								al_downloads.remove(dl);
 							}
 							catch (JSONException e){
 								e.printStackTrace();
@@ -112,11 +115,25 @@ public class DownloadManagerActivity extends AppCompatActivity {
 						}
 					});
 
-					Button no = dialog.findViewById(R.id.confirm_cancel_no);
-					no.setOnClickListener(new View.OnClickListener() {
+					Button openButton = dialog.findViewById(R.id.button_open_file);
+					openButton.setOnClickListener(new View.OnClickListener() {
 						@Override
 						public void onClick(View view) {
-							dialog.dismiss();
+							if (dl.isFinished()) {
+								File f = new File(dl.getPath());
+								Utils.openFile(dl.getFileName(), f, DownloadManagerActivity.this);
+								dialog.dismiss();
+							}
+							else{
+								DownloadManagerActivity.this.runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+									Toast.makeText(DownloadManagerActivity.this, "No se puede abrir porque no ha terminado",
+											Toast.LENGTH_LONG).show();
+									}
+								});
+								dialog.dismiss();
+							}
 						}
 					});
 				}

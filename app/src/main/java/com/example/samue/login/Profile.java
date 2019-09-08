@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.CursorIndexOutOfBoundsException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
@@ -88,7 +89,10 @@ public class Profile extends AppCompatActivity {
 	private String userRecursos;
 
 	public static final String LOCAL_MEDIA_STREAM_ID = "localStreamPN";
+	public static final String LOCAL_MEDIA_STREAM_ID_2 = "localStreamPN2";
 	static PnRTCClient pnRTCClient;
+	private PnRTCClient senderClient;
+	private int senderCount = 0;
 	private Pubnub mPubNub;
 	public String username;
 	private FileSender activeFileSender;
@@ -128,7 +132,7 @@ public class Profile extends AppCompatActivity {
 		mArchivesDatabase = new ArchivesDatabase(this);
 		friends_list = (ListView) findViewById(R.id.friends_list);
 		sendersManager = SendersManager.getSingleton();
-
+		sendersManager.start();
 		populateListView();
 
 		friends_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -179,9 +183,10 @@ public class Profile extends AppCompatActivity {
 			}
 		});
 
-		Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+		Toolbar myToolbar = findViewById(R.id.my_toolbar);
 		setSupportActionBar(myToolbar);
-		getSupportActionBar().setTitle("Hola, " + getIntent().getExtras().getString("user"));
+		getSupportActionBar().setTitle("Amigos");
+		//getSupportActionBar().setTitle("Hola, " + getIntent().getExtras().getString("user"));
 
 		comprobarPermisos();
 
@@ -232,7 +237,7 @@ public class Profile extends AppCompatActivity {
 					 * un dispositivo lento.
 					 */
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(1500);
 					} catch (InterruptedException e) {}
 
 					if(connectionType.equals("VAR")){ //buscamos que tipo de mensaje debemos enviar
@@ -327,6 +332,7 @@ public class Profile extends AppCompatActivity {
 					al_blocked_users.clear();
 					al_blocked_users = (ArrayList<Friends>) data.getSerializableExtra("arrayBloqueados");
 					// Si se ha bloqueado a un amigo hay que recargar el arrayList y el adapter.
+					loadFoldersAccess();
 					populateListView();
 				}
 				break;
@@ -377,10 +383,14 @@ public class Profile extends AppCompatActivity {
 		switch (item.getItemId()) {
 			case R.id.block_upload_mobile:
 				mobileDataBlocked = !mobileDataBlocked;
-				if (mobileDataBlocked)
+				if (mobileDataBlocked) {
+					item.setIcon(R.drawable.data_off);
 					Toast.makeText(getApplicationContext(), "Ya no se comparten archivos con datos móviles", Toast.LENGTH_LONG).show();
-				else
-					Toast.makeText(getApplicationContext(), "Ahora se comparten archivos con datos móviles", Toast.LENGTH_LONG).show();
+				}
+				else {
+					item.setIcon(R.drawable.data_on);
+					Toast.makeText(getApplicationContext(), "Ahora se pueden compartir archivos con datos móviles", Toast.LENGTH_LONG).show();
+				}
 				return true;
 
 			case R.id.see_shared_folders:
@@ -551,6 +561,7 @@ public class Profile extends AppCompatActivity {
 		}
 	}
 
+
 	private void notificate(final String notification){
 		Profile.this.runOnUiThread(new Runnable() {
 			@Override
@@ -619,7 +630,7 @@ public class Profile extends AppCompatActivity {
 			final ConnectivityManager connMgr = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
 			boolean isUsingMobile = connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).isConnectedOrConnecting();
 			// En caso de que sí y se haya seleccionado que no se usen en la barra superior, se descarta la petición.
-			if (!isUsingMobile || !mobileDataBlocked) {
+			if (!(isUsingMobile && mobileDataBlocked)) {
 				boolean cancel_dl;
 				try {
 					cancel_dl = jsonMsg.getBoolean(Utils.CANCEL_DL);
@@ -704,7 +715,7 @@ public class Profile extends AppCompatActivity {
 						// Si la subida cancelada es la activa se para.
 						if (uploadFileName.equals(activeFileSender.getFileName()))
 							activeFileSender.stopUpload();
-							// Si está en cola se elimina.
+						// Si está en cola se elimina.
 						else
 							sendersManager.removeSender(uploadFileName);
 					} catch (JSONException e) {
@@ -807,6 +818,9 @@ public class Profile extends AppCompatActivity {
 	 * Cuando el usuario remoto quiere previsualizar un archivo hay que enviarle cierta cantidad de
 	 * datos, la cual depende del tipo de archivo. Esté método determina la cantidad de datos que se
 	 * van a enviar en función del tipo del archivo si procede limitarlo de esta manera.
+	 * Los tamaños que no son establecidos en este método son determinados de otra forma ya que no se
+	 * pueden concretar por su naturaleza (archivos de vídeo, imagen, pdf...). Por ejemplo, no es posible
+	 * saber si 10KB es información suficientemente relevante para un pdf sin abrirlo.
 	 * @param ext Extensión del archivo.
 	 * @return Tamaño máximo de datos para el envío.
 	 */
@@ -815,11 +829,8 @@ public class Profile extends AppCompatActivity {
 		switch (ext){
 			case "txt": maxSize = 16*1024; break;
 			case "mp3": maxSize = 1024*1024; break;
-			//case "docx": maxSize = 16*1024; break;
-			//case "pptx": maxSize = 96*1024; break;
 			case "html": maxSize = 16*1024; break;
 			case "css": maxSize = 16*1024; break;
-			//case "xlsx": maxSize = 16*1024; break;
 			default: maxSize = 0;
 		}
 		return maxSize;
@@ -877,6 +888,11 @@ public class Profile extends AppCompatActivity {
 							mdialog.dismiss();
 						}
 					});
+				}
+				// Si ya lo estaba simplemente se le notifica.
+				else{
+					FA(userFR);
+					mdialog.dismiss();
 				}
 			}
 
@@ -1120,6 +1136,9 @@ public class Profile extends AppCompatActivity {
 
 
 
+
+
+
 	/**
 	 * Hilo para el envío de 1 archivo.
 	 */
@@ -1140,6 +1159,8 @@ public class Profile extends AppCompatActivity {
 			int totalBytesRead = 0;
 			String s;
 			activeFileSender = this;
+			pnRTCClient.closeConnection(sendTo2);
+			prepareSenderClient(sendTo2);
 			try {
 				while (!lastPiece) {
 					bytesRead = fis.read(bFile);
@@ -1150,9 +1171,23 @@ public class Profile extends AppCompatActivity {
 						lastPiece = (bytesRead < bFile.length);
 
 					msg.put(Utils.LAST_PIECE, lastPiece);
-					s = Base64.encodeToString(bFile, Base64.URL_SAFE);
+					/* Si es el último fragmento sólo hay que enviar los datos leídos. De otro modo
+					 * se enviarían datos que no han sido sobreescritos en el byte[] usado en el resto
+					 * de la transmisión.
+					 */
+					if (lastPiece){
+						// Si bytesRead == -1 no hay que enviar nada más.
+						byte[] finalbFile;
+						if (bytesRead != -1)
+							finalbFile = Arrays.copyOf(bFile, bytesRead);
+						else
+							finalbFile = new byte[]{0};
+						s = Base64.encodeToString(finalbFile, Base64.URL_SAFE);
+					}
+					else
+						s = Base64.encodeToString(bFile, Base64.URL_SAFE);
 					msg.put(Utils.DATA, s);
-					pnRTCClient.transmit(sendTo2, msg);
+					senderClient.transmit(sendTo2, msg);
 					msg.remove(Utils.DATA);
 					msg.remove(Utils.LAST_PIECE);
 
@@ -1168,14 +1203,36 @@ public class Profile extends AppCompatActivity {
 					file2.delete();
 
 				fis.close();
-				pnRTCClient.closeConnection(sendTo2);
+				senderClient.closeConnection(sendTo2);
 				sendingFile = false;
+
+				if (sendersManager.hasSender(file2.getName()))
+					sendersManager.removeSender(file2.getName());
+
 				// Se avisa al manager de que se ha terminado la subida y puede lanzar la siguiente en la cola, si existe:
-				sendersManager.removeSender(file2.getName());
 				sendersManager.notifyFinishedUpload();
+
 			} catch (Exception e){
 				e.printStackTrace();
 			}
+		}
+
+
+		/**
+		 * Inicializa el cliente que va a enviar los datos de ficheros.
+		 * @param user Usuario con el que se establece la conexión.
+		 */
+		private void prepareSenderClient(String user){
+			PeerConnectionFactory pcFactory = new PeerConnectionFactory();
+			String uuid = "sender_" + username;
+			//String uuid = "sender_" + (++senderCount) + '_' + username;
+			senderClient = new PnRTCClient(Constants.PUB_KEY, Constants.SUB_KEY, uuid);
+			MediaStream mediaStream = pcFactory.createLocalMediaStream(LOCAL_MEDIA_STREAM_ID_2);
+			//MediaStream mediaStream = pcFactory.createLocalMediaStream(LOCAL_MEDIA_STREAM_ID_2+senderCount);
+			senderClient.attachLocalMediaStream(mediaStream);
+			senderClient.attachRTCListener(new myRTCListener());
+			senderClient.listenOn(uuid);
+			senderClient.connect(user);
 		}
 
 
@@ -1212,6 +1269,7 @@ public class Profile extends AppCompatActivity {
 		public void stopUpload(){
 			try{
 				fis.close();
+				senderClient.closeConnection(sendTo2);
 				this.interrupt();
 			} catch (IOException e){
 				e.printStackTrace();
@@ -1242,7 +1300,6 @@ public class Profile extends AppCompatActivity {
 			final JSONObject jsonMsg = (JSONObject) message;
 			try {
 				final String type = jsonMsg.getString("type");
-				//TODO el manejo de los mensajes estaría bien hacerlos fuera de perfil, ya que no es su objetivo principal
 				if(type.equals("VAR")){
 					VAL(jsonMsg);
 				}else if(type.equals("VAL")){ //se debe manejar en la hebra principal ya que inicia una nueva actividad
@@ -1340,9 +1397,12 @@ public class Profile extends AppCompatActivity {
 				al_friends = new ArrayList<>(4);
 				foldersAccess.put(folder, al_friends);
 			}
-			String friend = mDatabaseHelper.getUserName(friendID);
-			al_friends.add(friend);
-			lastFolder = folder;
+			try {
+				String friend = mDatabaseHelper.getUserName(friendID);
+				al_friends.add(friend);
+				lastFolder = folder;
+			}
+			catch (CursorIndexOutOfBoundsException e){ e.printStackTrace();}
 		}
 	}
 

@@ -41,7 +41,7 @@
     </item>
     <item
         android:id="@+id/block_upload_mobile"
-        android:icon="@drawable/upload"
+        android:icon="@drawable/data_on"
         android:title="action_block_upload_mobile"
         app:showAsAction="always" />
 

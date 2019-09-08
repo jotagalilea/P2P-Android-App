@@ -1,6 +1,14 @@
 package com.example.samue.login;
 
 
+import android.content.ActivityNotFoundException;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.webkit.MimeTypeMap;
+import android.widget.Toast;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -41,7 +49,7 @@ public class Utils {
 
 
 	/**
-	 * Devuelve un arrayList de los nombres del arrayList de amigos pasado como parámetro.
+	 * Devuelve un arrayList con los nombres de la lista de amigos pasado como parámetro.
 	 * @param af lista de amigos.
 	 * @return lista de nombres de amigos.
 	 */
@@ -68,5 +76,26 @@ public class Utils {
 				sb.append(delimiter);
 		}
 		return sb.toString();
+	}
+
+
+	/**
+	 * Abre un archivo con la aplicación predeterminada o bien da a elegir con cual
+	 * se quiere abrir.
+	 * @param name Nombre del archivo.
+	 * @param file Archivo.
+	 * @param context Contexto de la actividad.
+	 */
+	public static void openFile(String name, File file, Context context){
+		MimeTypeMap myMime = MimeTypeMap.getSingleton();
+		Intent newIntent = new Intent(Intent.ACTION_VIEW);
+		String mimeType = myMime.getMimeTypeFromExtension(name.substring(name.lastIndexOf('.')+1));
+		newIntent.setDataAndType(Uri.fromFile(file), mimeType);
+		newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		try {
+			context.startActivity(newIntent);
+		} catch (ActivityNotFoundException e) {
+			Toast.makeText(context, "No se puede abrir este tipo de archivo", Toast.LENGTH_LONG).show();
+		}
 	}
 }

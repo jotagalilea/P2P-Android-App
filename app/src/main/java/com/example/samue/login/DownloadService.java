@@ -67,10 +67,20 @@ public class DownloadService extends Service{
 		return binder;
 	}
 
+
+	/**
+	 * Comprueba si hay hilos disponibles, o mejor dicho, si hay menos de 2 hilos descargando.
+	 * @return true si hay menos de 2 hilos funcionando, false en otro caso.
+	 */
 	public boolean hasFreeThreads(){
 		return (threadsRunning < MAX_DL_THREADS);
 	}
 
+	/**
+	 * Método que debe ser llamado desde la lógica de recepción de mensajes cuando se trata de
+	 * datos para una descarga. Lo notifica al monitor del servicio.
+	 * @param json Mensaje recibido.
+	 */
 	public void handleMsg(final JSONObject json){
 		synchronized (serviceMonitor){
 			jsonMsg = json;
@@ -80,16 +90,30 @@ public class DownloadService extends Service{
 	}
 
 
+	/**
+	 * Añade una descarga a la colección.
+	 * @param d Descarga nueva.
+	 */
 	private void addDownload(Download d){
 		al_downloads.add(d);
 	}
 
 
+	/**
+	 * Obtiene colección de descargas.
+	 * @return Arraylist de descargas.
+	 */
 	public ArrayList<Download> getDownloads(){
 		return al_downloads;
 	}
 
 
+	/**
+	 * Ordeno al gestor que debe parar una descarga.
+	 * @param dl_path Ruta del fichero perteneciente al objeto Download.
+	 * @param dl_fileName Nombre del fichero perteneciente al objeto Download.
+	 * @return
+	 */
 	public boolean stopDownload(String dl_path, String dl_fileName){
 		return managerThread.stopDownload(dl_path, dl_fileName);
 	}
@@ -104,8 +128,10 @@ public class DownloadService extends Service{
 	}
 
 
+	/**
+	 * Detiene el servicio.
+	 */
 	public void stop(){
-		//TODO: No sé si haría falta desvincular todos los clientes. Interrumpir hilos si los hay.
 		this.stopSelf();
 	}
 
@@ -133,7 +159,8 @@ public class DownloadService extends Service{
 					public void run() {
 						if (hasFreeThreads() && !msgQueue.isEmpty()){
 							/* Si hay hilos disponibles se coge uno de los mensajes de petición de archivo
-							 * previamente preparado y se transmite la solicitud.
+							 * previamente preparado y se transmite la solicitud. Hago esta comprobación cada
+							 * 10 segundos para interferir lo menos posible.
 							 */
 							Pair<String,JSONObject> p = msgQueue.poll();
 							String sendTo = p.first;
@@ -177,8 +204,12 @@ public class DownloadService extends Service{
 						 * hilo libre. Sólo cuando esto sucede es cuando se transmite una de las solicitudes en cola.
 						 */
 						else
-							notifyAndSetJson();
-
+							try {
+								notifyAndSetJson();
+							}
+							catch (NullPointerException e){
+								e.printStackTrace();
+							}
 
 						newDownload = false;
 						newMsgReceived = false;
@@ -208,6 +239,9 @@ public class DownloadService extends Service{
 		}
 
 
+		/**
+		 * Arranca un hilo de descarga.
+		 */
 		private void startDownload(){
 			Object monitor = new Object();
 			dl.setRunning();
@@ -242,28 +276,29 @@ public class DownloadService extends Service{
 			Pair<Object,ManagerThread.DownloadThread> dl_Pair = hm_downloads.get(dl_fileName);
 			Object monitor = dl_Pair.first;
 			boolean success = false;
-			try{
-				synchronized (monitor){
+			/*try{
+				/*synchronized (monitor){
 					while (newMsgReceived)
 						monitor.wait();
-
+				*/
 					DownloadThread th = dl_Pair.second;
 					th.interrupt();
 					hm_downloads.remove(dl_fileName);
+					--threadsRunning;
 					File f = new File(dl_path);
 					f.delete();
 					success = true;
-				}
+				/*}
 			}
 			catch (InterruptedException e){ e.printStackTrace();}
-
+			*/
 			return success;
 		}
 
 
 
 		/**
-		 * Clase dedicada a almacenar el hilo en el que se ejecuta una descarga.
+		 * Clase que implementa el hilo en el que se ejecuta una descarga.
 		 */
 		private class DownloadThread extends Thread{
 			private JSONObject json;
@@ -293,6 +328,7 @@ public class DownloadService extends Service{
 					File file = new File(path);
 					bytesWritten = 0;
 
+					// Actualiza el estado de la descarga en el último segundo para que se muestre más tarde en la interfaz gráfica.
 					dl_timer = new Timer();
 					dl_timer.schedule(new TimerTask() {
 						@Override
@@ -301,7 +337,7 @@ public class DownloadService extends Service{
 						}
 					}, 1000, 1000);
 
-					// Código que gestiona la descarga:
+					// Código que gestiona la recepción de los datos según van llegando los mensajes:
 					while (!lastPiece){
 						synchronized (dl_monitor){
 							while (!newJson)
@@ -328,22 +364,13 @@ public class DownloadService extends Service{
 							newJson = false;
 						}
 					}
-					// Si se pidió una previsualización se abre el archivo:
+					// Si se pidió una previsualización se abre el archivo al terminar:
 					boolean isPreview = jsonMsg.getBoolean(Utils.PREVIEW_SENT);
 					if (isPreview){
-						MimeTypeMap myMime = MimeTypeMap.getSingleton();
-						Intent newIntent = new Intent(Intent.ACTION_VIEW);
-						String mimeType = myMime.getMimeTypeFromExtension(name.substring(name.lastIndexOf('.')+1));
-						newIntent.setDataAndType(Uri.fromFile(file), mimeType);
-						newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-						try {
-							getApplicationContext().startActivity(newIntent);
-						} catch (ActivityNotFoundException e) {
-							Toast.makeText(getApplicationContext(), "No se puede abrir este tipo de archivo", Toast.LENGTH_LONG).show();
-						}
+						Utils.openFile(name, file, getApplicationContext());
 					}
 
-					this.interrupt();
+					//this.interrupt();
 				} catch(Exception e){
 					e.printStackTrace();
 					dl_timer.cancel();

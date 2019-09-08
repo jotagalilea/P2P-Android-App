@@ -185,7 +185,7 @@ public class Download {
 
 	/**
 	 * Actualiza el tiempo estimado.
-	 * @param bps
+	 * @param bps bytes por segundo.
 	 */
 	public void updateETA(int bps){
 		if (progress == 100)
@@ -202,8 +202,8 @@ public class Download {
 
 	/**
 	 * Obtiene el tamaño del fichero como String.
-	 * @param s
-	 * @return
+	 * @param s tamaño.
+	 * @return tamaño en String.
 	 */
 	private String getSizeString(long s){
 		StringBuilder aux;

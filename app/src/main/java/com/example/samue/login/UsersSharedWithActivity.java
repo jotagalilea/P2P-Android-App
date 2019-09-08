@@ -44,7 +44,7 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 		al_friends = (ArrayList<Friends>) intent.getSerializableExtra("friends");
 
 		listView = findViewById(R.id.friendswaccess_list);
-		if (usersWithAccess!=null) {
+		if ((usersWithAccess!=null) && (usersWithAccess.size()>0)) {
 			adapter = new SelectFriends_Adapter(UsersSharedWithActivity.this, usersWithAccess);
 			noFriendsLeft = false;
 		}
@@ -84,6 +84,8 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 							for (int i=0; i<selected.length; i++){
 								if (selected[i]) {
 									usersSel.add(remainingFriends.get(i));
+									if (usersWithAccess==null)
+										usersWithAccess = new ArrayList<>();
 									usersWithAccess.add(remainingFriends.get(i));
 								}
 							}
@@ -105,6 +107,7 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 		removeFriendsFAB.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View view) {
+				// Si no quedan usuarios con acceso y se pulsa el botón entonces se borra la carpeta:
 				if (noFriendsLeft) {
 					helper.removeSharedFolder(folderName);
 					Intent removedINT = new Intent();
@@ -119,17 +122,18 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 							usersSelected.add(usersWithAccess.get(i));
 					}
 					boolean success = helper.removeFriendsFromFolder(folderName, usersSelected);
-					// Si se ha borrado el último usuario entonces se borra la carpeta compartida:
 					boolean allRemoved = usersSelected.size() == adapter.getCountSelected();
 					if (success && allRemoved)
-						helper.removeSharedFolder(folderName);
+						// La próxima vez que se pulse el botón de la papelera se borrará la carpeta
+						// si no se añaden nuevos usuarios a ella.
+						noFriendsLeft = true;
 
 					Intent removedINT = new Intent();
 					removedINT.putExtra("someRemovedOrAdded", true);
 					setResult(RESULT_OK, removedINT);
 					onBackPressed();
 				}
-				else Toast.makeText(UsersSharedWithActivity.this, "ERROR: Ningún amigo seleccionado", Toast.LENGTH_SHORT).show();
+				else Toast.makeText(UsersSharedWithActivity.this, "Error: Ningún amigo seleccionado", Toast.LENGTH_SHORT).show();
 			}
 		});
 	}
@@ -140,7 +144,11 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 	 * @return lista de los "restantes".
 	 */
 	private ArrayList<String> getRemainingFriends(){
-		int size = al_friends.size() - usersWithAccess.size();
+		int size;
+		if (usersWithAccess!=null)
+			size = al_friends.size() - usersWithAccess.size();
+		else
+			size = al_friends.size();
 		if (size == 0)
 			return null;
 
@@ -148,7 +156,7 @@ public class UsersSharedWithActivity extends AppCompatActivity {
 		Iterator<Friends> it = al_friends.iterator();
 		while (it.hasNext()){
 			String f = it.next().getNombre();
-			if (!usersWithAccess.contains(f))
+			if (usersWithAccess==null || !usersWithAccess.contains(f))
 				result.add(f);
 		}
 		return result;

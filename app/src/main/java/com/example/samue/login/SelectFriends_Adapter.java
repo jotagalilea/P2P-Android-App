@@ -61,6 +61,10 @@ public class SelectFriends_Adapter extends ArrayAdapter {
 		return selected;
 	}
 
+	/**
+	 * Devuelve cuántos elementos se han seleccionado.
+	 * @return Número de elementos seleccionados.
+	 */
 	public int getCountSelected(){
 		return countSelected;
 	}

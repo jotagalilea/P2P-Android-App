@@ -4,7 +4,7 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "com.example.samue.login"
-        minSdkVersion 17
+        minSdkVersion 22
         targetSdkVersion 26
         multiDexEnabled true
         versionCode 1
