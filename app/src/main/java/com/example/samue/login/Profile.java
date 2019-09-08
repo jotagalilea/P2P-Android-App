@@ -806,6 +806,9 @@ public class Profile extends AppCompatActivity {
 	 * Cuando el usuario remoto quiere previsualizar un archivo hay que enviarle cierta cantidad de
 	 * datos, la cual depende del tipo de archivo. Esté método determina la cantidad de datos que se
 	 * van a enviar en función del tipo del archivo si procede limitarlo de esta manera.
+	 * Los tamaños que no son establecidos en este método son determinados de otra forma ya que no se
+	 * pueden concretar por su naturaleza (archivos de vídeo, imagen, pdf...). Por ejemplo, no es posible
+	 * saber si 10KB es información suficientemente relevante para un pdf sin abrirlo.
 	 * @param ext Extensión del archivo.
 	 * @return Tamaño máximo de datos para el envío.
 	 */
@@ -814,11 +817,8 @@ public class Profile extends AppCompatActivity {
 		switch (ext){
 			case "txt": maxSize = 16*1024; break;
 			case "mp3": maxSize = 1024*1024; break;
-			//case "docx": maxSize = 16*1024; break;
-			//case "pptx": maxSize = 96*1024; break;
 			case "html": maxSize = 16*1024; break;
 			case "css": maxSize = 16*1024; break;
-			//case "xlsx": maxSize = 16*1024; break;
 			default: maxSize = 0;
 		}
 		return maxSize;

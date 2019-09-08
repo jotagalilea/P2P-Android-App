@@ -49,7 +49,7 @@ public class Utils {
 
 
 	/**
-	 * Devuelve un arrayList de los nombres del arrayList de amigos pasado como parámetro.
+	 * Devuelve un arrayList con los nombres de la lista de amigos pasado como parámetro.
 	 * @param af lista de amigos.
 	 * @return lista de nombres de amigos.
 	 */

@@ -88,7 +88,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	 * Método para añadir filas nuevas a las tablas.
 	 * @param item String con el nombre del añadido.
 	 * @param table Tabla seleccionada.
-	 * @return
+	 * @return true si ha tenido éxito, false en otro caso.
 	 */
 	public boolean addData(String item, String table){
 		SQLiteDatabase db = this.getWritableDatabase();

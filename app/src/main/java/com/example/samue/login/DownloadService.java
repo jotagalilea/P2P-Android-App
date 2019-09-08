@@ -67,10 +67,20 @@ public class DownloadService extends Service{
 		return binder;
 	}
 
+
+	/**
+	 * Comprueba si hay hilos disponibles, o mejor dicho, si hay menos de 2 hilos descargando.
+	 * @return true si hay menos de 2 hilos funcionando, false en otro caso.
+	 */
 	public boolean hasFreeThreads(){
 		return (threadsRunning < MAX_DL_THREADS);
 	}
 
+	/**
+	 * Método que debe ser llamado desde la lógica de recepción de mensajes cuando se trata de
+	 * datos para una descarga. Lo notifica al monitor del servicio.
+	 * @param json Mensaje recibido.
+	 */
 	public void handleMsg(final JSONObject json){
 		synchronized (serviceMonitor){
 			jsonMsg = json;
@@ -80,16 +90,30 @@ public class DownloadService extends Service{
 	}
 
 
+	/**
+	 * Añade una descarga a la colección.
+	 * @param d Descarga nueva.
+	 */
 	private void addDownload(Download d){
 		al_downloads.add(d);
 	}
 
 
+	/**
+	 * Obtiene colección de descargas.
+	 * @return Arraylist de descargas.
+	 */
 	public ArrayList<Download> getDownloads(){
 		return al_downloads;
 	}
 
 
+	/**
+	 * Ordeno al gestor que debe parar una descarga.
+	 * @param dl_path Ruta del fichero perteneciente al objeto Download.
+	 * @param dl_fileName Nombre del fichero perteneciente al objeto Download.
+	 * @return
+	 */
 	public boolean stopDownload(String dl_path, String dl_fileName){
 		return managerThread.stopDownload(dl_path, dl_fileName);
 	}
@@ -104,6 +128,9 @@ public class DownloadService extends Service{
 	}
 
 
+	/**
+	 * Detiene el servicio.
+	 */
 	public void stop(){
 		this.stopSelf();
 	}
@@ -301,6 +328,7 @@ public class DownloadService extends Service{
 					File file = new File(path);
 					bytesWritten = 0;
 
+					// Actualiza el estado de la descarga en el último segundo para que se muestre más tarde en la interfaz gráfica.
 					dl_timer = new Timer();
 					dl_timer.schedule(new TimerTask() {
 						@Override
@@ -309,7 +337,7 @@ public class DownloadService extends Service{
 						}
 					}, 1000, 1000);
 
-					// Código que gestiona la descarga:
+					// Código que gestiona la recepción de los datos según van llegando los mensajes:
 					while (!lastPiece){
 						synchronized (dl_monitor){
 							while (!newJson)
@@ -336,7 +364,7 @@ public class DownloadService extends Service{
 							newJson = false;
 						}
 					}
-					// Si se pidió una previsualización se abre el archivo:
+					// Si se pidió una previsualización se abre el archivo al terminar:
 					boolean isPreview = jsonMsg.getBoolean(Utils.PREVIEW_SENT);
 					if (isPreview){
 						Utils.openFile(name, file, getApplicationContext());

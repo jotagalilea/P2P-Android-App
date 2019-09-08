@@ -74,6 +74,7 @@ public class Recursos extends AppCompatActivity {
 					});
 
 					String ext = name.substring(name.lastIndexOf('.')+1);
+					// Si el archivo seleccionado no se puede previsualizar se deshabilita el botón.
 					if (!Utils.SUPPORTED_PREVIEW_FORMATS.contains(ext)) {
 						preview.setEnabled(false);
 						preview.setAlpha(.5f);

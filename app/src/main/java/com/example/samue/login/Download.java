@@ -203,7 +203,7 @@ public class Download {
 	/**
 	 * Obtiene el tamaño del fichero como String.
 	 * @param s tamaño.
-	 * @return
+	 * @return tamaño en String.
 	 */
 	private String getSizeString(long s){
 		StringBuilder aux;
