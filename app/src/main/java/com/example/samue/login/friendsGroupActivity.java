@@ -67,7 +67,7 @@ public class friendsGroupActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(),nameFriend + " se ha eliminado", Toast.LENGTH_SHORT).show();
                         deletedialog.dismiss();
                         reloadlistview(listFriends);
-                        
+
                     }
                 });
 

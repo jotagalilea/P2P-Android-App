@@ -65,12 +65,16 @@ public class listGroupsActivity extends AppCompatActivity {
                          * Se abre la actividad que permite ver, añadir y eliminar algún amigo
                          * del grupo seleccionado.
                          */
-                        Intent intent = new Intent(listGroupsActivity.this, friendsGroupActivity.class);
+                        final ArrayList<String> files = group.getListFiles();
+                        Intent intent = new Intent(listGroupsActivity.this, filesGroupActivity.class);
+                        intent.putExtra("lista", files);
+                        intent.putExtra("listener", false);
+                        startActivityForResult(intent, 3);
+                        //Intent intent = new Intent(listGroupsActivity.this, friendsGroupActivity.class);
                         //intent.putExtra("folderName", folder_name);
                         //intent.putExtra("users", foldersAccess.get(folder_name));
                         //intent.putExtra("friends", al_friends);
                         dialog.dismiss();
-                        startActivityForResult(intent, 1);
                     }
                 });
 
