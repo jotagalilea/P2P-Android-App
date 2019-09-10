@@ -31,7 +31,7 @@
     </android.support.v7.widget.Toolbar>
 
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/deletefiles"
+        android:id="@+id/addfile"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/fab_margin"
@@ -42,8 +42,9 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!---
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/addfiles"
+        android:id="@+id/deletefiles"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/fab_margin"
@@ -55,6 +56,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:rippleColor="#FFFFFF"
         tools:visibility="visible" />
+        -->
 
     <ListView
         android:id="@+id/listfilesgroups"

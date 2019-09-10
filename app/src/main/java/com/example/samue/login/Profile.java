@@ -64,7 +64,7 @@ import util.Constants;
 
 
 
-public class Profile extends AppCompatActivity {
+public class Profile extends AppCompatActivity{
 	Dialog mdialog;
 	Dialog mdialogGroup;
 	FloatingActionButton fab;
@@ -98,6 +98,8 @@ public class Profile extends AppCompatActivity {
 	private Intent dl_intent;
 	private boolean serviceBound = false;
 	private boolean mobileDataBlocked;
+
+
 	private ServiceConnection serviceConnection = new ServiceConnection(){
 		@Override
 		public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -112,6 +114,7 @@ public class Profile extends AppCompatActivity {
 			Log.e("ERROR EN DESCARGA", "SERVICIO DESCONECTADO INESPERADAMENTE");
 		}
 	};
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -477,6 +480,8 @@ public class Profile extends AppCompatActivity {
                         Intent myIntent = new Intent(Profile.this, friendsgroup.class);
                         myIntent.putExtra("nameGroup", nameGroup.getText().toString());
                         myIntent.putExtra("username",username);
+                        myIntent.putExtra("valor",1); //valor=1, crear grupo, valor=2, añadir amigos nuevos
+
                         startActivityForResult(myIntent, 3);
                     }
 

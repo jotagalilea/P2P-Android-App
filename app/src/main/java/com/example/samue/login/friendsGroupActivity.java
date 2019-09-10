@@ -1,6 +1,8 @@
 package com.example.samue.login;
 
+import android.app.Activity;
 import android.app.Dialog;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -35,10 +37,10 @@ public class friendsGroupActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_friends_group);
-        Toolbar toolbar = findViewById(R.id.listGroups_toolbar);
+        Toolbar toolbar = findViewById(R.id.listfriendsgroup_toolbar);
         setSupportActionBar(toolbar);
         friendsGroupDatabaseHelper = new DatabaseHelper(this);
-        deleteFriend = findViewById(R.id.deleteFriends);
+        //deleteFriend = findViewById(R.id.deleteFriends);
         addFriend = findViewById(R.id.addFriends);
         isadmin();
         listFriends= new ArrayList<Friends>();
@@ -79,6 +81,24 @@ public class friendsGroupActivity extends AppCompatActivity {
                 return true; //esto hay que ver que poner
             }
         });
+        FloatingActionButton addfriendgroup = findViewById(R.id.addFriends);
+        addfriendgroup.setOnClickListener(new View.OnClickListener() {
+
+              @Override
+              public void onClick(View view) {
+                  Intent myIntent = new Intent(friendsGroupActivity.this, friendsgroup.class);
+                  myIntent.putExtra("nameGroup", groupname);
+                  myIntent.putExtra("username",username);
+                  myIntent.putExtra("valor",2); //valor=1, crear grupo, valor=2, añadir amigos nuevos
+                  myIntent.putExtra("friendsold",arrayListToString(listFriends));
+                  startActivityForResult(myIntent, 1);
+
+
+
+              }
+          }
+
+        );
 
 
     }
@@ -130,6 +150,22 @@ public class friendsGroupActivity extends AppCompatActivity {
         if(adminGroup!=username){
             addFriend.setEnabled(false);
             deleteFriend.setEnabled(false);
+        }
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        super.onActivityResult(requestCode,resultCode,data);
+        switch(requestCode){
+            case 1:
+                if(resultCode == Activity.RESULT_OK){
+                    String friendsnewstring;
+                    friendsnewstring=data.getStringExtra("friends");
+                    listFriends= stringtoArrayListFriend(friendsnewstring);
+
+                    adapter = new FriendsAdapter(this, listFriends);
+                    listView = findViewById(R.id.listfriendgroups);
+                    listView.setAdapter(adapter);
+                }
         }
     }
 

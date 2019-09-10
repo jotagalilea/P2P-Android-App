@@ -2,9 +2,12 @@ package com.example.samue.login;
 
 import android.app.Dialog;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -18,16 +21,33 @@ import java.util.ArrayList;
 public class filesGroupActivity extends AppCompatActivity {
 	private Dialog mdialog;
 	private ArrayList listnamefiles;
+	private String listnamefilesstring;
+	private ArrayList<Friends> listownersfiles;
+	private String listownersfilesstring;
 	private ArrayAdapter<String> adaptador;
 	private ListView listview;
+
+	private String username;
+	private String namegroup;
+
+	static DatabaseHelper filesgroupDatabaseHelper;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_list_files_group);
+		Toolbar toolbar = findViewById(R.id.listfilesgroup_toolbar);
+		setSupportActionBar(toolbar);
 		Bundle extras = getIntent().getExtras();
 		listview = findViewById(R.id.listfilesgroups);
+		username = extras.getString("username");
+		namegroup= extras.getString("namegroup");
+		listnamefilesstring=extras.getString("lista");
+		listownersfilesstring=extras.getString("owners");
+		listnamefiles = new ArrayList();
+		loadfilesGroup();
 
-		listnamefiles = extras.getParcelableArrayList("lista");
+
 
 		boolean listener = extras.getBoolean("listener");
 		final String sendTo = extras.getString("sendTo");
@@ -140,10 +160,47 @@ public class filesGroupActivity extends AppCompatActivity {
 			});
 		}
 
-		adaptador = new AEArrayAdapter(this, android.R.layout.simple_list_item_1, listnamefiles);
-		listview .setAdapter(adaptador);
+		FloatingActionButton addFile = findViewById(R.id.addfile);
+		// Botón para compartir un archivo o una carpeta.
+		addFile.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(filesGroupActivity.this, ArchiveExplorerGroup.class);
+				intent.putExtra("username", username);
+				intent.putExtra("namegrou",namegroup);
+				intent.putExtra("listfiles",listnamefilesstring);
+				intent.putExtra("listowners",listownersfilesstring);
+				startActivityForResult(intent, 1);
+			}
+		});
 	}
 
+	private void loadfilesGroup(){
+		if (listnamefiles != null){listnamefiles.clear();}
+		else {listnamefiles = new ArrayList();}
 
+			listnamefiles = stringtoArrayList(listnamefilesstring);
+			listownersfiles = stringtoArrayListFriend(listownersfilesstring);
+	}
+	private ArrayList<Friends> stringtoArrayListFriend(String friends){
+		if (friends == null){return new ArrayList<>();}
+		ArrayList<Friends> resultado= new ArrayList<>();
+		String[] friendsSeparate = friends.split(",");
+		for (int i=0; i<friendsSeparate.length; i++){
+			resultado.add(new Friends(friendsSeparate[i],R.drawable.astronaura));
+		}
+		return resultado;
+	}
+	private ArrayList stringtoArrayList(String files){
+		if (files == null){
+			return new ArrayList<>();
+		}
+		ArrayList resultado= new ArrayList();
+		String[] filesSeparate = files.split(",");
+		for (int i=0; i<filesSeparate.length; i++){
+			resultado.add(filesSeparate[i]);
+		}
+		return resultado;
+	}
 
 }

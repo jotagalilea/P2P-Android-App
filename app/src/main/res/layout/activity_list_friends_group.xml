@@ -31,7 +31,7 @@
     </android.support.v7.widget.Toolbar>
 
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/deleteFriends"
+        android:id="@+id/addFriends"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/fab_margin"
@@ -42,32 +42,33 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/addFriends"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/fab_margin"
-        android:layout_marginEnd="272dp"
-        android:layout_marginBottom="168dp"
-        android:src="@drawable/backfriend"
-        app:backgroundTint="@android:color/holo_blue_light"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:rippleColor="#FFFFFF"
-        tools:visibility="visible" />
+    <!---
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/addFriends"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/fab_margin"
+            android:layout_marginEnd="272dp"
+            android:layout_marginBottom="168dp"
+            android:src="@drawable/backfriend"
+            app:backgroundTint="@android:color/holo_blue_light"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:rippleColor="#FFFFFF"
+            tools:visibility="visible" />
+    -->
+        <ListView
+            android:id="@+id/listfriendgroups"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/listfriendsgroup_toolbar"
+            app:layout_constraintVertical_bias="0.0" />
 
-    <ListView
-        android:id="@+id/listfriendgroups"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/listfriendsgroup_toolbar"
-        app:layout_constraintVertical_bias="0.0" />
 
-
-</android.support.constraint.ConstraintLayout>
+    </android.support.constraint.ConstraintLayout>

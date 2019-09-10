@@ -49,6 +49,7 @@ public class listGroupsActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                loadGroupList();
                 nameGroup = listGroups.get(i).getNameGroup();
                 final Groups group = listGroups.get(i);
                 final Dialog dialog = new Dialog(listGroupsActivity.this);
@@ -69,6 +70,10 @@ public class listGroupsActivity extends AppCompatActivity {
                         Intent intent = new Intent(listGroupsActivity.this, filesGroupActivity.class);
                         intent.putExtra("lista", files);
                         intent.putExtra("listener", false);
+                        intent.putExtra("owners", arrayListToString(group.getListOwners()));
+
+                        intent.putExtra("username",username);
+                        intent.putExtra("namegroup",group.getNameGroup());
                         startActivityForResult(intent, 3);
                         //Intent intent = new Intent(listGroupsActivity.this, friendsGroupActivity.class);
                         //intent.putExtra("folderName", folder_name);
@@ -95,6 +100,7 @@ public class listGroupsActivity extends AppCompatActivity {
                         intent.putExtra("administrator", group.getAdministrador());
                         intent.putExtra("username",username);
                         startActivityForResult(intent, 1);
+                        loadGroupList();
                     }
                 });
             }
@@ -150,6 +156,7 @@ public class listGroupsActivity extends AppCompatActivity {
                         Intent myIntent = new Intent(listGroupsActivity.this, friendsgroup.class);
                         myIntent.putExtra("nameGroup", nameGroupText.getText().toString());
                         myIntent.putExtra("username",username);
+                        myIntent.putExtra("valor",1); //valor=1, crear grupo, valor=2, añadir amigos nuevos
                         startActivityForResult(myIntent, 3);
                         finish();
                     }
@@ -219,15 +226,13 @@ public class listGroupsActivity extends AppCompatActivity {
         }
         return resultado;
     }
-    private String ArrayListFriendToString (ArrayList<Friends> list){
-        String resultado ="";
-        for (int i=0; i<list.size(); i++){
-            resultado=resultado + list.get(i).getNombre();
+    private String ArrayListFriendToString (ArrayList<Friends> list) {
+        String resultado = "";
+        for (int i = 0; i < list.size(); i++) {
+            resultado = resultado + list.get(i).getNombre();
         }
         return resultado;
     }
-
-    private void removeGroup(String nameGroup){}
 
     //pasar de un array lists de amigos a un string
     private String arrayListToString(ArrayList<Friends> listfriend) {

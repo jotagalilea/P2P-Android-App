@@ -14,6 +14,7 @@ import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,14 +31,17 @@ public class friendsgroup extends AppCompatActivity {
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<Friends> friends;
     private ArrayList<Friends> friendsSelected;
+    private ArrayList<Friends> friendsSelectedfinish;
     public SparseBooleanArray selectedItems;
     private ArrayList files;
     private String nameGroup;
+    private String aux;
     private String administrator;
     private Groups newGroup;
     private DatabaseHelper helperGroup;
     public String username;
     static DatabaseHelper groupDatabaseHelper;
+    private int valor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,9 +58,15 @@ public class friendsgroup extends AppCompatActivity {
         nameGroup = extras.getString("nameGroup");
         administrator = extras.getString("username");
         username =extras.getString("username");
+        valor = extras.getInt("valor");
 
-        friendslist();
+        if(valor == 1) {friendslist();}
+        if(valor == 2) {
+            aux = extras.getString("friendsold");
+            friendslist2(aux);
+        }
         friendsSelected = new ArrayList<>();
+        friendsSelectedfinish = new ArrayList<>();
 
         recyclerView = (RecyclerView) findViewById(R.id.rv_friendsgroup);
 
@@ -77,17 +87,37 @@ public class friendsgroup extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 boolean add;
-                friendsSelected = rvadapter.obtenerSeleccionados();
 
-                newGroup = new Groups(nameGroup, R.drawable.icongroup, friendsSelected, administrator);
-                add = addGroupBBDD(nameGroup, friendsSelected, administrator);
-                if (add) {
-                    Toast.makeText(getApplicationContext(), "Group " + nameGroup + " has been created", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
-                    intent.putExtra("username", username);
-                    startActivityForResult(intent, 1);
-                }
-                else {
+                if (valor == 1) {
+                    friendsSelected = rvadapter.obtenerSeleccionados();
+                    friendsSelectedfinish.add(new Friends(username, R.drawable.ic_launcher_foreground));
+                    friendsSelectedfinish.addAll(friendsSelected);
+
+                    newGroup = new Groups(nameGroup, R.drawable.icongroup, friendsSelectedfinish, administrator);
+                    add = addGroupBBDD(nameGroup, friendsSelectedfinish, administrator);
+                    if (add) {
+                        Toast.makeText(getApplicationContext(), "Group " + nameGroup + " has been created", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
+                        intent.putExtra("username", username);
+                        startActivityForResult(intent, 1);
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
+                    }
+                }else if (valor == 2){
+                    friendsSelected = rvadapter.obtenerSeleccionados();
+                    friendsSelectedfinish.addAll(friends);
+                    friendsSelectedfinish.addAll(friendsSelected);
+                    add = updateGroupBBDD(nameGroup, friendsSelectedfinish);
+                    if (add) {
+                        Toast.makeText(getApplicationContext(), "Friends selected has been added", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent();
+                        intent.putExtra("friends",arrayListToString(friendsSelectedfinish));
+                        setResult(1,intent);
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
+                    }
+
+                }else{
                     Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
                 }
                 finish();
@@ -103,6 +133,27 @@ public class friendsgroup extends AppCompatActivity {
             friends.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
         }
     }
+    public void friendslist2(String friendsold) {
+        ArrayList<Friends> friendsaux;
+        friendsaux=stringtoArrayListFriend(friendsold);
+        Cursor data = groupDatabaseHelper.getData(DatabaseHelper.FRIENDS_TABLE_NAME);
+        friends = new ArrayList<>();
+        while(data.moveToNext()){
+            if (stringisfriend(friendsaux,data.getString(1))){}
+            else {
+                friends.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
+            }
+        }
+    }
+    public boolean stringisfriend(ArrayList<Friends> friendsold, String nuevo){
+        ArrayList<Friends> friendstmp=new ArrayList<>();
+        friendstmp=friendsold;
+        for(Friends f : friendsold){
+            if (f.getNombre().equals(nuevo))
+                return true;
+        }
+        return false;
+    }
 
     //añadir el grupo creado a la BBDD
     private boolean addGroupBBDD(String name, ArrayList<Friends> listFriends, String administrator) {
@@ -113,6 +164,15 @@ public class friendsgroup extends AppCompatActivity {
             return inserted;
         else
             return false;
+    }
+    private boolean updateGroupBBDD(String nameupdate, ArrayList<Friends> friendsupdate){
+        String friendsupdatestring = arrayListToString(friendsupdate);
+        boolean inserted = helperGroup.addFriendsGroup(nameupdate,friendsupdatestring, helperGroup.GROUPS_TABLE_NAME);
+        if (inserted)
+            return inserted;
+        else
+            return false;
+
     }
 
 
@@ -165,5 +225,15 @@ public class friendsgroup extends AppCompatActivity {
          }
         return myString;
     }
+    private ArrayList<Friends> stringtoArrayListFriend(String friends){
+        if (friends == null){return new ArrayList<>();}
+        ArrayList<Friends> resultado= new ArrayList<>();
+        String[] friendsSeparate = friends.split(",");
+        for (int i=0; i<friendsSeparate.length; i++){
+            resultado.add(new Friends(friendsSeparate[i],R.drawable.astronaura));
+        }
+        return resultado;
+    }
+
 }
 
