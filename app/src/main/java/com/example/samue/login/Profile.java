@@ -98,6 +98,7 @@ public class Profile extends AppCompatActivity{
 	private Intent dl_intent;
 	private boolean serviceBound = false;
 	private boolean mobileDataBlocked;
+	static ArrayList<Groups> listgroups;
 
 
 	private ServiceConnection serviceConnection = new ServiceConnection(){
@@ -131,6 +132,8 @@ public class Profile extends AppCompatActivity{
 		mArchivesDatabase = new ArchivesDatabase(this);
 		friends_list = (ListView) findViewById(R.id.friends_list);
 		sendersManager = SendersManager.getSingleton();
+
+		loadGroupList();
 
 		populateListView();
 
@@ -195,7 +198,7 @@ public class Profile extends AppCompatActivity{
 			public void onClick(View v) {
 				Intent intent = new Intent(Profile.this, listGroupsActivity.class);
 				intent.putExtra("username", username);
-				startActivityForResult(intent, 1);
+				startActivityForResult(intent, 6);
 			}
 		});
 
@@ -337,6 +340,12 @@ public class Profile extends AppCompatActivity{
 				loadSharedFolders();
 				loadFoldersAccess();
 				break;
+			case 6:
+				ArrayList<Groups> newgroups= (ArrayList<Groups>) data.getSerializableExtra("newgroups");
+				ArrayList<Groups> finalgroups = addnewgroups(newgroups);
+				for(int i=0; i<finalgroups.size(); i++) {
+					NG(finalgroups.get(i));
+				}
 			default:
 				if(!userRecursos.equals("")){
 					cerrarConexion(userRecursos);
@@ -466,6 +475,7 @@ public class Profile extends AppCompatActivity{
 					}
 				});
 				return true;
+				/*
 			case R.id.add_group:
                 //llevar a la nueva actividad de crear grupo
                 mdialogGroup = new Dialog(Profile.this);
@@ -487,6 +497,8 @@ public class Profile extends AppCompatActivity{
 
                 });
                 return true;
+
+				 */
 			default:
 				// If we got here, the user's action was not recognized.
 				// Invoke the superclass to handle it.
@@ -1278,6 +1290,8 @@ public class Profile extends AppCompatActivity{
 					handleSA(jsonMsg);
 				}else if(type.equals("VSF")){
 					handleVSF(jsonMsg);
+				}else if(type.equals("NG")){
+					handleNG(jsonMsg);
 				}
 
 			} catch (JSONException e){
@@ -1350,6 +1364,78 @@ public class Profile extends AppCompatActivity{
 			al_friends.add(friend);
 			lastFolder = folder;
 		}
+	}
+	private void loadGroupList() {
+		Cursor c = mDatabaseHelper.getData(DatabaseHelper.GROUPS_TABLE_NAME);
+		if (listgroups != null){listgroups.clear();}
+		else {listgroups = new ArrayList<>();}
+
+		while (c.moveToNext()) {
+			ArrayList<Friends> friends = stringtoArrayListFriend(c.getString(1));
+			ArrayList files = stringtoArrayList(c.getString(2));
+			ArrayList<Friends> owners = stringtoArrayListFriend(c.getString(3));
+			Groups g = new Groups(c.getString(0), R.drawable.icongroup, friends, files, owners, c.getString(4));
+			listgroups.add(g);
+		}
+	}
+	private ArrayList<Friends> stringtoArrayListFriend(String friends){
+		if (friends == null){return new ArrayList<>();}
+		ArrayList<Friends> resultado= new ArrayList<>();
+		String[] friendsSeparate = friends.split(",");
+		for (int i=0; i<friendsSeparate.length; i++){
+			resultado.add(new Friends(friendsSeparate[i],R.drawable.astronaura));
+		}
+		return resultado;
+	}
+	private ArrayList stringtoArrayList(String files){
+		if (files == null){
+			return new ArrayList<>();
+		}
+		ArrayList resultado= new ArrayList();
+		String[] filesSeparate = files.split(",");
+		for (int i=0; i<filesSeparate.length; i++){
+			resultado.add(filesSeparate[i]);
+		}
+		return resultado;
+	}
+	private ArrayList<Groups> addnewgroups(ArrayList<Groups> newgroups){
+		ArrayList<Groups> resultado=new ArrayList<>();
+		for(Groups g: newgroups){
+			if( !listgroups.contains(g)){
+				resultado.add(g);
+			}
+		}
+		return resultado;
+	}
+	private void NG(Groups group){
+		ArrayList<Friends> friendslist=group.getListFriends();
+
+		try{
+			for(int i=0; i<friendslist.size(); i++) {
+				JSONObject msg = new JSONObject();
+				msg.put("type", "NG");
+				msg.put("infogroup", group);
+				this.pnRTCClient.transmit(friendslist.get(i).getNombre(), msg);
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	private void handleNG(JSONObject grupojson){
+		try{
+			Groups groupnew = (Groups) grupojson.get("infogroup");
+			boolean inserted = mDatabaseHelper.addGroup(groupnew.getNameGroup(), ArrayListFriendToString(groupnew.getListFriends()), groupnew.getAdministrador());
+
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+	private String ArrayListFriendToString (ArrayList<Friends> list) {
+		String resultado = "";
+		for (int i = 0; i < list.size(); i++) {
+			resultado = resultado + list.get(i).getNombre();
+		}
+		return resultado;
 	}
 
 

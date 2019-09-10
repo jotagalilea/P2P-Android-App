@@ -161,10 +161,11 @@ public class friendsGroupActivity extends AppCompatActivity {
                     String friendsnewstring;
                     friendsnewstring=data.getStringExtra("friends");
                     listFriends= stringtoArrayListFriend(friendsnewstring);
-
                     adapter = new FriendsAdapter(this, listFriends);
                     listView = findViewById(R.id.listfriendgroups);
                     listView.setAdapter(adapter);
+
+                    setResult(Activity.RESULT_OK, data);
                 }
         }
     }

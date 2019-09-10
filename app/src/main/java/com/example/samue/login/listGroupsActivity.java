@@ -14,6 +14,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.security.acl.Group;
 import java.util.ArrayList;
 
 public class listGroupsActivity extends AppCompatActivity {
@@ -23,7 +24,7 @@ public class listGroupsActivity extends AppCompatActivity {
     private ArrayList<Groups> listGroups;
     private String username;
     static DatabaseHelper groupDatabaseHelper;
-
+    static ArrayList<Groups> new_groups= new ArrayList<Groups>();
 
     Dialog mdialogCreate;
     EditText nameGroupText;
@@ -44,6 +45,9 @@ public class listGroupsActivity extends AppCompatActivity {
         listGroups= new ArrayList<Groups>();
         Bundle extras = getIntent().getExtras();
         username=extras.getString("username");
+        Groups newgroup = (Groups) extras.getSerializable("newgroup");
+        if (newgroup != null) new_groups.add(newgroup);
+
         loadGroupList();
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -157,8 +161,7 @@ public class listGroupsActivity extends AppCompatActivity {
                         myIntent.putExtra("nameGroup", nameGroupText.getText().toString());
                         myIntent.putExtra("username",username);
                         myIntent.putExtra("valor",1); //valor=1, crear grupo, valor=2, añadir amigos nuevos
-                        startActivityForResult(myIntent, 3);
-                        finish();
+                        startActivityForResult(myIntent, 6);
                     }
 
                 });
@@ -176,6 +179,8 @@ public class listGroupsActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+
+
         finish();
     }
     /**

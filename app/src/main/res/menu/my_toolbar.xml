@@ -34,9 +34,11 @@
             <item
                 android:id="@+id/add_friend"
                 android:title="add friend" />
+            <!---
             <item
                 android:id="@+id/add_group"
                 android:title="add group" />
+                -->
         </menu>
     </item>
     <item

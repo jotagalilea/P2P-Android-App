@@ -1,5 +1,6 @@
 package com.example.samue.login;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
 import android.support.design.widget.FloatingActionButton;
@@ -99,7 +100,9 @@ public class friendsgroup extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(), "Group " + nameGroup + " has been created", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
                         intent.putExtra("username", username);
-                        startActivityForResult(intent, 1);
+                        intent.putExtra("newgroup",newGroup);
+                        setResult(Activity.RESULT_OK,intent);
+                        finish();
                     } else {
                         Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
                     }
@@ -120,7 +123,6 @@ public class friendsgroup extends AppCompatActivity {
                 }else{
                     Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
                 }
-                finish();
             }
         });
     }
@@ -233,6 +235,17 @@ public class friendsgroup extends AppCompatActivity {
             resultado.add(new Friends(friendsSeparate[i],R.drawable.astronaura));
         }
         return resultado;
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        super.onActivityResult(requestCode, resultCode, data);
+        switch(requestCode) {
+            case 6:
+                if (resultCode == Activity.RESULT_OK) {
+                    setResult(Activity.RESULT_OK, data);
+                    finish();
+                }
+        }
     }
 
 }
