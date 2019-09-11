@@ -341,11 +341,20 @@ public class Profile extends AppCompatActivity{
 				loadFoldersAccess();
 				break;
 			case 6:
-				ArrayList<Groups> newgroups= (ArrayList<Groups>) data.getSerializableExtra("newgroups");
-				ArrayList<Groups> finalgroups = addnewgroups(newgroups);
-				for(int i=0; i<finalgroups.size(); i++) {
-					NG(finalgroups.get(i));
+				try {
+					// Si hay grupos nuevos, modificados o con ficheros moodificados:
+					ArrayList<Groups> newgroups = (ArrayList<Groups>) data.getSerializableExtra("newgroups");
+					if (!newgroups.isEmpty()) {
+						//ArrayList<Groups> finalgroups = addnewgroups(newgroups);
+						for (int i = 0; i < newgroups.size(); i++) {
+							NG(newgroups.get(i));
+						}
+					}
+				}catch(Exception e) {
+					e.printStackTrace();
 				}
+				break;
+
 			default:
 				if(!userRecursos.equals("")){
 					cerrarConexion(userRecursos);
@@ -1424,6 +1433,9 @@ public class Profile extends AppCompatActivity{
 	private void handleNG(JSONObject grupojson){
 		try{
 			Groups groupnew = (Groups) grupojson.get("infogroup");
+			if (mDatabaseHelper.existGroup(groupnew.nameGroup)){
+				boolean remove = mDatabaseHelper.deleteGroup(groupnew.nameGroup,mDatabaseHelper.GROUPS_TABLE_NAME);
+			}
 			boolean inserted = mDatabaseHelper.addGroup(groupnew.getNameGroup(), ArrayListFriendToString(groupnew.getListFriends()), groupnew.getAdministrador());
 
 		}catch (Exception e){

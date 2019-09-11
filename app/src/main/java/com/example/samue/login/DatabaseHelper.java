@@ -354,7 +354,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		if (result == -1)
 			return false;
 		else{
-			deleteGroup(name, FRIENDS_TABLE_NAME);
+			removeData(name,FRIENDS_TABLE_NAME);
 			return true;
 		}
 	}
@@ -553,6 +553,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		else
 			return true;
 
+	}
+	public boolean existGroup(String nameGroup){
+		SQLiteDatabase db = this.getWritableDatabase();
+		String q = "SELECT * FROM " + GROUPS_TABLE_NAME;
+		Cursor data = db.rawQuery(q, null);
+		while (data.moveToNext()){
+			if (data.getString(1).equals(nameGroup)) return true;
+		}
+		return false;
 	}
 
 

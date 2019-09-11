@@ -31,6 +31,7 @@ public class friendsgroup extends AppCompatActivity {
     private RVadapter rvadapter;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<Friends> friends;
+    private ArrayList<Friends> friendsviews;
     private ArrayList<Friends> friendsSelected;
     private ArrayList<Friends> friendsSelectedfinish;
     public SparseBooleanArray selectedItems;
@@ -80,7 +81,7 @@ public class friendsgroup extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
 
         // specify an adapter (see also next example)
-        rvadapter = new RVadapter(friends);
+        rvadapter = new RVadapter(friendsviews);
         recyclerView.setAdapter(rvadapter);
 
         FloatingActionButton button = findViewById(R.id.createGroup);
@@ -98,9 +99,10 @@ public class friendsgroup extends AppCompatActivity {
                     add = addGroupBBDD(nameGroup, friendsSelectedfinish, administrator);
                     if (add) {
                         Toast.makeText(getApplicationContext(), "Group " + nameGroup + " has been created", Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
+                        Intent intent = new Intent();
                         intent.putExtra("username", username);
-                        intent.putExtra("newgroup",newGroup);
+                        intent.putExtra("newgroup",nameGroup);
+                        intent.putExtra("newFriends",friendsSelectedfinish);
                         setResult(Activity.RESULT_OK,intent);
                         finish();
                     } else {
@@ -108,14 +110,15 @@ public class friendsgroup extends AppCompatActivity {
                     }
                 }else if (valor == 2){
                     friendsSelected = rvadapter.obtenerSeleccionados();
-                    friendsSelectedfinish.addAll(friends);
+                    friendsSelectedfinish.addAll(friendsviews);
                     friendsSelectedfinish.addAll(friendsSelected);
                     add = updateGroupBBDD(nameGroup, friendsSelectedfinish);
                     if (add) {
                         Toast.makeText(getApplicationContext(), "Friends selected has been added", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent();
-                        intent.putExtra("friends",arrayListToString(friendsSelectedfinish));
-                        setResult(1,intent);
+                        intent.putExtra("friends",friendsSelectedfinish);
+                        setResult(Activity.RESULT_OK,intent);
+                        finish();
                     } else {
                         Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
                     }
@@ -131,8 +134,10 @@ public class friendsgroup extends AppCompatActivity {
     public void friendslist() {
         Cursor data = groupDatabaseHelper.getData(DatabaseHelper.FRIENDS_TABLE_NAME);
         friends = new ArrayList<>();
+        friendsviews= new ArrayList<>();
         while(data.moveToNext()){
             friends.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
+            friendsviews.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
         }
     }
     public void friendslist2(String friendsold) {
@@ -140,17 +145,19 @@ public class friendsgroup extends AppCompatActivity {
         friendsaux=stringtoArrayListFriend(friendsold);
         Cursor data = groupDatabaseHelper.getData(DatabaseHelper.FRIENDS_TABLE_NAME);
         friends = new ArrayList<>();
+        friendsviews= new ArrayList<>();
         while(data.moveToNext()){
             if (stringisfriend(friendsaux,data.getString(1))){}
             else {
-                friends.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
+                friendsviews.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
             }
+            friends.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
         }
     }
     public boolean stringisfriend(ArrayList<Friends> friendsold, String nuevo){
         ArrayList<Friends> friendstmp=new ArrayList<>();
         friendstmp=friendsold;
-        for(Friends f : friendsold){
+        for(Friends f : friendstmp){
             if (f.getNombre().equals(nuevo))
                 return true;
         }

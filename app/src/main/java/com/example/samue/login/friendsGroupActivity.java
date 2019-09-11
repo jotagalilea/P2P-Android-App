@@ -21,6 +21,7 @@ public class friendsGroupActivity extends AppCompatActivity {
     private FriendsAdapter adapter;
     private ListView listView;
     private ArrayList<Friends> listFriends;
+    private ArrayList<Friends> newFriends;
     private String username;
     private String groupname;
     private String adminGroup;
@@ -44,6 +45,7 @@ public class friendsGroupActivity extends AppCompatActivity {
         addFriend = findViewById(R.id.addFriends);
         isadmin();
         listFriends= new ArrayList<Friends>();
+        newFriends = new ArrayList<>();
         loadFriendsList();
 
 
@@ -92,9 +94,6 @@ public class friendsGroupActivity extends AppCompatActivity {
                   myIntent.putExtra("valor",2); //valor=1, crear grupo, valor=2, añadir amigos nuevos
                   myIntent.putExtra("friendsold",arrayListToString(listFriends));
                   startActivityForResult(myIntent, 1);
-
-
-
               }
           }
 
@@ -158,14 +157,16 @@ public class friendsGroupActivity extends AppCompatActivity {
         switch(requestCode){
             case 1:
                 if(resultCode == Activity.RESULT_OK){
-                    String friendsnewstring;
-                    friendsnewstring=data.getStringExtra("friends");
-                    listFriends= stringtoArrayListFriend(friendsnewstring);
-                    adapter = new FriendsAdapter(this, listFriends);
+                    ArrayList<Friends> newListFriends = (ArrayList<Friends>) data.getSerializableExtra("friends");
+                    for (Friends f: newListFriends)
+                        if (!listFriends.contains(f)) {
+                            listFriends.add(f);
+                            newFriends.add(f);
+                        }
+                    adapter = new FriendsAdapter(this, this.listFriends);
                     listView = findViewById(R.id.listfriendgroups);
                     listView.setAdapter(adapter);
-
-                    setResult(Activity.RESULT_OK, data);
+                    break;
                 }
         }
     }
@@ -173,7 +174,16 @@ public class friendsGroupActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        finish();
+        Intent result = new Intent();
+        /* TODO
+         * En realidad habría que coger los amigos nuevos, meterlos en la lista
+         * del grupo listFriends y pasar listFriends cen el intent.
+         */
+        result.putExtra("newFriends", newFriends);
+        result.putExtra("newgroup", this.groupname);
+        setResult(Activity.RESULT_OK, result);
+        //TODO: si no funciona llamar a finish()
+        super.onBackPressed();
     }
 
 

@@ -1,5 +1,6 @@
 package com.example.samue.login;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.database.Cursor;
@@ -16,6 +17,7 @@ import android.widget.Toast;
 
 import java.security.acl.Group;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class listGroupsActivity extends AppCompatActivity {
 
@@ -24,7 +26,8 @@ public class listGroupsActivity extends AppCompatActivity {
     private ArrayList<Groups> listGroups;
     private String username;
     static DatabaseHelper groupDatabaseHelper;
-    static ArrayList<Groups> new_groups= new ArrayList<Groups>();
+    static ArrayList<Groups> new_groups;
+
 
     Dialog mdialogCreate;
     EditText nameGroupText;
@@ -47,6 +50,7 @@ public class listGroupsActivity extends AppCompatActivity {
         username=extras.getString("username");
         Groups newgroup = (Groups) extras.getSerializable("newgroup");
         if (newgroup != null) new_groups.add(newgroup);
+        new_groups= new ArrayList<Groups>();
 
         loadGroupList();
 
@@ -174,14 +178,14 @@ public class listGroupsActivity extends AppCompatActivity {
                 onBackPressed();
             }
         });
-
     }
 
     @Override
     public void onBackPressed() {
-
-
-        finish();
+        Intent intent = new Intent();
+        intent.putExtra("newgroups",new_groups);
+        setResult(Activity.RESULT_OK,intent);
+        super.onBackPressed();
     }
     /**
      * Carga de los grupos que estan almacenados en la BD.
@@ -252,4 +256,45 @@ public class listGroupsActivity extends AppCompatActivity {
         return myString;
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case 6:
+                String groupName = null;
+                try{ // Vienes de cambiar o añadir grupo:
+                    groupName = data.getStringExtra("newgroup");
+                    for (int i = 0; i < listGroups.size(); i++) {
+                        Groups g = listGroups.get(i);
+                        if (g.equals(groupName)) {
+                            ArrayList<Friends> friends = g.listFriends;
+                            ArrayList files = g.listFiles;
+                            ArrayList<Friends> owners = g.listOwners;
+                            String admin = g.administrator;
+                            try {
+                                friends = (ArrayList<Friends>) data.getSerializableExtra("newFriends");
+                            } catch (Exception e) {
+                            }
+                            try {
+                                files = data.getStringArrayListExtra("newFiles");
+                                owners = (ArrayList<Friends>) data.getSerializableExtra("newOwners");
+                            } catch (Exception e) {
+                            }
+
+                            // Cuando hagas lo de cambiar los ficheros tienes que ponerlos aquí:
+                            Groups newGroup = new Groups(groupName, g.imgGroup, friends, files, owners, admin);
+                            listGroups.set(i, newGroup);
+                            new_groups.add(newGroup);
+                        }
+                    }else{
+                        Groups newGroup = new Groups(groupName,R.drawable.icongroup,(ArrayList<Friends>) data.getSerializableExtra("newFriends"),username);
+                        new_groups.add(newGroup);
+                        }
+
+                    }
+                }catch (NullPointerException e){}
+                loadGroupList();
+                break;
+        }
+    }
 }
