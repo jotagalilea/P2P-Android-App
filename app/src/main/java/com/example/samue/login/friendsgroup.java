@@ -100,9 +100,11 @@ public class friendsgroup extends AppCompatActivity {
                     if (add) {
                         Toast.makeText(getApplicationContext(), "Group " + nameGroup + " has been created", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent();
-                        intent.putExtra("username", username);
-                        intent.putExtra("newgroup",nameGroup);
+                        /*intent.putExtra("username", username);
+                        intent.putExtra("newgroupname",nameGroup);
                         intent.putExtra("newFriends",friendsSelectedfinish);
+                        */
+                        intent.putExtra("newGroup",newGroup);
                         setResult(Activity.RESULT_OK,intent);
                         finish();
                     } else {
@@ -110,7 +112,7 @@ public class friendsgroup extends AppCompatActivity {
                     }
                 }else if (valor == 2){
                     friendsSelected = rvadapter.obtenerSeleccionados();
-                    friendsSelectedfinish.addAll(friendsviews);
+                    friendsSelectedfinish.addAll(stringtoArrayListFriend(aux));
                     friendsSelectedfinish.addAll(friendsSelected);
                     add = updateGroupBBDD(nameGroup, friendsSelectedfinish);
                     if (add) {
@@ -187,7 +189,7 @@ public class friendsgroup extends AppCompatActivity {
 
 
 
-   // ----------------------a partir de aqui revisar que esto no sobre-------------------
+    // ----------------------a partir de aqui revisar que esto no sobre-------------------
 
     private void removeGroup(String name) {
         boolean removed = helperGroup.deleteGroup(name, helperGroup.GROUPS_TABLE_NAME);
@@ -224,14 +226,19 @@ public class friendsgroup extends AppCompatActivity {
 
     //pasar de un array lists de amigos a un string
     private String arrayListToString(ArrayList<Friends> listfriend) {
+        String myString =null;
 
-        String myString ="";
         for (int i = 0; i<listfriend.size();i++){
-            myString = myString + listfriend.get(i).getNombre();
-            if (i < (listfriend.size()-1)){
-                myString = myString + ",";
+            if (myString==null){
+                myString=listfriend.get(i).getNombre();
+                if (i < (listfriend.size() - 1)){myString = myString + ",";}
+            }else {
+                myString = myString + listfriend.get(i).getNombre();
+                if (i < (listfriend.size() - 1)) {
+                    myString = myString + ",";
+                }
             }
-         }
+        }
         return myString;
     }
     private ArrayList<Friends> stringtoArrayListFriend(String friends){

@@ -27,7 +27,7 @@ public class listGroupsActivity extends AppCompatActivity {
     private String username;
     static DatabaseHelper groupDatabaseHelper;
     static ArrayList<Groups> new_groups;
-
+    static ArrayList<Groups> delete_groups;
 
     Dialog mdialogCreate;
     EditText nameGroupText;
@@ -51,6 +51,7 @@ public class listGroupsActivity extends AppCompatActivity {
         Groups newgroup = (Groups) extras.getSerializable("newgroup");
         if (newgroup != null) new_groups.add(newgroup);
         new_groups= new ArrayList<Groups>();
+        delete_groups = new ArrayList<Groups>();
 
         loadGroupList();
 
@@ -128,10 +129,12 @@ public class listGroupsActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View view) {
                         //removeGroup(nameGroup);
+                        delete_groups.add(listGroups.get(position));
                         listGroups.remove(listGroups.get(position));
                         groupDatabaseHelper.deleteGroup(nameGroup, groupDatabaseHelper.GROUPS_TABLE_NAME);
                         Toast.makeText(getApplicationContext(),nameGroup + " se ha eliminado", Toast.LENGTH_SHORT).show();
                         deletedialog.dismiss();
+
                         loadGroupList();
                     }
                 });
@@ -184,6 +187,7 @@ public class listGroupsActivity extends AppCompatActivity {
     public void onBackPressed() {
         Intent intent = new Intent();
         intent.putExtra("newgroups",new_groups);
+        intent.putExtra("deletegroups",delete_groups);
         setResult(Activity.RESULT_OK,intent);
         super.onBackPressed();
     }
@@ -245,12 +249,17 @@ public class listGroupsActivity extends AppCompatActivity {
 
     //pasar de un array lists de amigos a un string
     private String arrayListToString(ArrayList<Friends> listfriend) {
+        String myString =null;
 
-        String myString ="";
         for (int i = 0; i<listfriend.size();i++){
-            myString = myString + listfriend.get(i).getNombre();
-            if (i < (listfriend.size()-1)){
-                myString = myString + ",";
+            if (myString==null){
+                myString=listfriend.get(i).getNombre();
+                if (i < (listfriend.size() - 1)){myString = myString + ",";}
+            }else {
+                myString = myString + listfriend.get(i).getNombre();
+                if (i < (listfriend.size() - 1)) {
+                    myString = myString + ",";
+                }
             }
         }
         return myString;
@@ -263,37 +272,32 @@ public class listGroupsActivity extends AppCompatActivity {
             case 6:
                 String groupName = null;
                 try{ // Vienes de cambiar o añadir grupo:
-                    groupName = data.getStringExtra("newgroup");
-                    for (int i = 0; i < listGroups.size(); i++) {
-                        Groups g = listGroups.get(i);
-                        if (g.equals(groupName)) {
+                    Groups newGroup = (Groups) data.getSerializableExtra("newGroup");
+                    new_groups.add(newGroup);
+
+                    // Si listGroups contiene el grupo i entonces es uno modificado (amigos o ficheros):
+                    if (listGroups.contains(newGroup)) {
+                        for (int i = 0; i < new_groups.size(); i++) {
+                            Groups g = new_groups.get(i);
+                            boolean found = false;
+                            int j;
+                            for (j = 0; (j < listGroups.size()) && !found; j++) {
+                                found = listGroups.get(j).equals(newGroup);
+                            }
                             ArrayList<Friends> friends = g.listFriends;
                             ArrayList files = g.listFiles;
                             ArrayList<Friends> owners = g.listOwners;
                             String admin = g.administrator;
-                            try {
-                                friends = (ArrayList<Friends>) data.getSerializableExtra("newFriends");
-                            } catch (Exception e) {
+                            if (found) {
+                                listGroups.set(j, g);
                             }
-                            try {
-                                files = data.getStringArrayListExtra("newFiles");
-                                owners = (ArrayList<Friends>) data.getSerializableExtra("newOwners");
-                            } catch (Exception e) {
-                            }
-
-                            // Cuando hagas lo de cambiar los ficheros tienes que ponerlos aquí:
-                            Groups newGroup = new Groups(groupName, g.imgGroup, friends, files, owners, admin);
-                            listGroups.set(i, newGroup);
-                            new_groups.add(newGroup);
                         }
+                        // Si no, es nuevo de verdad:
                     }else{
-                        Groups newGroup = new Groups(groupName,R.drawable.icongroup,(ArrayList<Friends>) data.getSerializableExtra("newFriends"),username);
-                        new_groups.add(newGroup);
-                        }
-
+                        listGroups.add(newGroup);
                     }
+                    loadGroupList();
                 }catch (NullPointerException e){}
-                loadGroupList();
                 break;
         }
     }

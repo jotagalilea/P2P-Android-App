@@ -50,6 +50,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -350,6 +351,13 @@ public class Profile extends AppCompatActivity{
 							NG(newgroups.get(i));
 						}
 					}
+					ArrayList<Groups> deletegroups = (ArrayList<Groups>) data.getSerializableExtra("deletegroups");
+					if (!deletegroups.isEmpty()) {
+						for (int i = 0; i < newgroups.size(); i++) {
+							DG(deletegroups.get(i));
+						}
+					}
+
 				}catch(Exception e) {
 					e.printStackTrace();
 				}
@@ -1420,10 +1428,15 @@ public class Profile extends AppCompatActivity{
 		ArrayList<Friends> friendslist=group.getListFriends();
 
 		try{
-			for(int i=0; i<friendslist.size(); i++) {
+			for(int i=1; i<friendslist.size(); i++) {
 				JSONObject msg = new JSONObject();
 				msg.put("type", "NG");
-				msg.put("infogroup", group);
+				msg.put("nameGroup", group.nameGroup);
+				msg.put("imgGroup", group.imgGroup);
+				msg.put("listFriends",arrayListToString(group.listFriends));
+				msg.put("listFiles", Utils.joinStrings(",",group.listFiles));
+				msg.put("listOwners", arrayListToString(group.listOwners));
+				msg.put("admin", group.administrator);
 				this.pnRTCClient.transmit(friendslist.get(i).getNombre(), msg);
 			}
 		}catch(Exception e){
@@ -1432,12 +1445,45 @@ public class Profile extends AppCompatActivity{
 	}
 	private void handleNG(JSONObject grupojson){
 		try{
-			Groups groupnew = (Groups) grupojson.get("infogroup");
+			String nameGroup =(String)grupojson.get("nameGroup");
+			ArrayList<Friends> listFriends =stringtoArrayListFriend(grupojson.getString("listFriends"));
+			int img =grupojson.getInt("imgGroup");
+			ArrayList listFiles = new ArrayList( Arrays.asList(grupojson.getString("listFiles").split(",")));
+			ArrayList<Friends> listOwners =stringtoArrayListFriend(grupojson.getString("listOwners"));
+			String admin =grupojson.getString("admin");
+			Groups groupnew = new Groups(nameGroup,img, listFriends,listFiles,listOwners,admin);
+
 			if (mDatabaseHelper.existGroup(groupnew.nameGroup)){
 				boolean remove = mDatabaseHelper.deleteGroup(groupnew.nameGroup,mDatabaseHelper.GROUPS_TABLE_NAME);
 			}
 			boolean inserted = mDatabaseHelper.addGroup(groupnew.getNameGroup(), ArrayListFriendToString(groupnew.getListFriends()), groupnew.getAdministrador());
 
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+	private void DG(Groups group){
+		ArrayList<Friends> friendslist=group.getListFriends();
+
+		try{
+			for(int i=1; i<friendslist.size(); i++) {
+				JSONObject msg = new JSONObject();
+				msg.put("type", "NG");
+				msg.put("nameGroup", group.nameGroup);
+				this.pnRTCClient.transmit(friendslist.get(i).getNombre(), msg);
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	private void handleDG(JSONObject grupojson){
+		try{
+			String nameGroup =(String)grupojson.get("nameGroup");
+			//Groups groupnew = new Groups(nameGroup,img, listFriends,listFiles,listOwners,admin);
+
+			if (mDatabaseHelper.existGroup(nameGroup)){
+				boolean remove = mDatabaseHelper.deleteGroup(nameGroup,mDatabaseHelper.GROUPS_TABLE_NAME);
+			}
 		}catch (Exception e){
 			e.printStackTrace();
 		}
@@ -1449,8 +1495,23 @@ public class Profile extends AppCompatActivity{
 		}
 		return resultado;
 	}
+	//pasar de un array lists de amigos a un string
+	private String arrayListToString(ArrayList<Friends> listfriend) {
+		String myString ="";
 
-
+		for (int i = 0; i<listfriend.size();i++){
+			if (myString.equals("")){
+				myString=listfriend.get(i).getNombre();
+				if (i < (listfriend.size() - 1)){myString = myString + ",";}
+			}else {
+				myString = myString + listfriend.get(i).getNombre();
+				if (i < (listfriend.size() - 1)) {
+					myString = myString + ",";
+				}
+			}
+		}
+		return myString;
+	}
 
 	@Override
 	protected void onDestroy(){
