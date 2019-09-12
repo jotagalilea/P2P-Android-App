@@ -57,7 +57,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public DatabaseHelper(Context context){
         super(context, DB_NAME, null, 1);
-         context.deleteDatabase(DB_NAME); //para borrar la base de datos si hace falta
+        //context.deleteDatabase(DB_NAME); //para borrar la base de datos si hace falta
         TABLE_NAMES.add(FRIENDS_TABLE_NAME);
         TABLE_NAMES.add(BLOCKED_TABLE_NAME);
         TABLE_NAMES.add(FOLDER_ACCESS_TABLE);

@@ -146,6 +146,7 @@ public class Profile extends AppCompatActivity {
 				Button deleteButton = mdialog.findViewById(R.id.deleteButton);
 				Button seeFilesButton = mdialog.findViewById(R.id.seefriendfilesButton);
 				Button seeFriendSFButton = mdialog.findViewById(R.id.seefriendSFButton);
+				Button blockFriendButton = mdialog.findViewById(R.id.blockFriendButton);
 
 				// Ver archivos compartidos por el amigo seleccionado.
 				seeFilesButton.setOnClickListener(new View.OnClickListener() {
@@ -178,6 +179,22 @@ public class Profile extends AppCompatActivity {
 						userRecursos = connectTo;
 						Toast.makeText(getApplicationContext(), "Conectando con "+connectTo, Toast.LENGTH_LONG).show();
 						publish(connectTo, "VSF"); //View Shared Folders
+					}
+				});
+
+				// Bloquear amigo.
+				blockFriendButton.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View view) {
+						mdialog.dismiss();
+						boolean inserted = mDatabaseHelper.addData(connectTo, mDatabaseHelper.BLOCKED_TABLE_NAME);
+						if (inserted) {
+							mDatabaseHelper.deleteFriend(connectTo);
+							loadFoldersAccess();
+							loadBlockedUsersList();
+							populateListView();
+							Toast.makeText(getApplicationContext(), "Amigo " + connectTo + " bloqueado", Toast.LENGTH_LONG).show();
+						}
 					}
 				});
 			}
@@ -1412,6 +1429,12 @@ public class Profile extends AppCompatActivity {
 	protected void onDestroy(){
 		downloadService.stop();
 		super.onDestroy();
+	}
+
+	@Override
+	public void onBackPressed(){
+		finish();
+		System.exit(0);
 	}
 
 }
