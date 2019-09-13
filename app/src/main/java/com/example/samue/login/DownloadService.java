@@ -165,7 +165,7 @@ public class DownloadService extends Service{
 							Pair<String,JSONObject> p = msgQueue.poll();
 							String sendTo = p.first;
 							JSONObject msg = p.second;
-							Profile.pnRTCClient.transmit(sendTo, msg);
+							Profile.downloaderClient.transmit(sendTo, msg);
 						}
 					}
 				}, 10010, 10010);
@@ -229,14 +229,16 @@ public class DownloadService extends Service{
 		 */
 		private void notifyAndSetJson(){
 			Pair<Object, DownloadThread> dl_pair = hm_downloads.get(name);
-			Object dl_monitor = dl_pair.first;
-			DownloadThread th = dl_pair.second;
-
-			synchronized (dl_monitor) {
-				th.setJSON(jsonMsg);
-				dl_monitor.notify();
+			if (dl_pair != null) {
+				Object dl_monitor = dl_pair.first;
+				DownloadThread th = dl_pair.second;
+				synchronized (dl_monitor) {
+					th.setJSON(jsonMsg);
+					dl_monitor.notify();
+				}
 			}
 		}
+
 
 
 		/**
@@ -252,18 +254,8 @@ public class DownloadService extends Service{
 			dl_th.setName("DownloaderThread_" + threadsRunning);
 			++threadsRunning;
 			dl_th.start();
-			try{
-				JSONObject signal = new JSONObject();
-				signal.put(Utils.BEGIN, true);
-				Profile.pnRTCClient.transmit(dl.getFriend(), signal);
-			}
-			catch (JSONException e){
-				dl_th.interrupt();
-				--threadsRunning;
-				hm_downloads.remove(dl.getFileName());
-				dl.setStopped();
-			}
 		}
+
 
 
 		/**
@@ -274,24 +266,14 @@ public class DownloadService extends Service{
 		 */
 		public boolean stopDownload(String dl_path, String dl_fileName){
 			Pair<Object,ManagerThread.DownloadThread> dl_Pair = hm_downloads.get(dl_fileName);
-			Object monitor = dl_Pair.first;
 			boolean success = false;
-			/*try{
-				/*synchronized (monitor){
-					while (newMsgReceived)
-						monitor.wait();
-				*/
-					DownloadThread th = dl_Pair.second;
-					th.interrupt();
-					hm_downloads.remove(dl_fileName);
-					--threadsRunning;
-					File f = new File(dl_path);
-					f.delete();
-					success = true;
-				/*}
-			}
-			catch (InterruptedException e){ e.printStackTrace();}
-			*/
+			DownloadThread th = dl_Pair.second;
+			hm_downloads.remove(dl_fileName);
+			th.interrupt();
+			--threadsRunning;
+			File f = new File(dl_path);
+			f.delete();
+			success = true;
 			return success;
 		}
 

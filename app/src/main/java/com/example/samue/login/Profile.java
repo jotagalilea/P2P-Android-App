@@ -89,9 +89,11 @@ public class Profile extends AppCompatActivity {
 	private String userRecursos;
 
 	public static final String LOCAL_MEDIA_STREAM_ID = "localStreamPN";
-	public static final String LOCAL_MEDIA_STREAM_ID_2 = "localStreamPN2";
+	public static final String LOCAL_MEDIA_STREAM_ID_SENDER = "localStreamPNsender";
+	public static final String LOCAL_MEDIA_STREAM_ID_DOWNLOADER = "localStreamPNdownloader";
 	static PnRTCClient pnRTCClient;
 	private PnRTCClient senderClient;
+	static PnRTCClient downloaderClient;
 	private int senderCount = 0;
 	private Pubnub mPubNub;
 	public String username;
@@ -617,7 +619,9 @@ public class Profile extends AppCompatActivity {
 						Toast.makeText(getApplicationContext(), "Descargando " + finalName, Toast.LENGTH_LONG).show();
 					}
 				});
-				pnRTCClient.transmit(sendTo, msg);
+				prepareDownloaderClient(sendTo);
+				downloaderClient.transmit(sendTo, msg);
+				//pnRTCClient.transmit(sendTo, msg);
 			}
 			else{
 				downloadService.queueMsg(sendTo, msg);
@@ -631,6 +635,22 @@ public class Profile extends AppCompatActivity {
 		}catch(Exception e){
 			e.printStackTrace();
 		}
+	}
+
+
+	/**
+	 * Inicializa el cliente que va a recibir los datos de ficheros.
+	 * @param user Usuario con el que se establece la conexión.
+	 */
+	private void prepareDownloaderClient(String user){
+		PeerConnectionFactory pcFactory = new PeerConnectionFactory();
+		String uuid = "downloader_" + username;
+		downloaderClient = new PnRTCClient(Constants.PUB_KEY, Constants.SUB_KEY, uuid);
+		MediaStream mediaStream = pcFactory.createLocalMediaStream(LOCAL_MEDIA_STREAM_ID_DOWNLOADER);
+		downloaderClient.attachLocalMediaStream(mediaStream);
+		downloaderClient.attachRTCListener(new myRTCListener());
+		downloaderClient.listenOn(uuid);
+		downloaderClient.connect(user);
 	}
 
 
@@ -1244,7 +1264,7 @@ public class Profile extends AppCompatActivity {
 			String uuid = "sender_" + username;
 			//String uuid = "sender_" + (++senderCount) + '_' + username;
 			senderClient = new PnRTCClient(Constants.PUB_KEY, Constants.SUB_KEY, uuid);
-			MediaStream mediaStream = pcFactory.createLocalMediaStream(LOCAL_MEDIA_STREAM_ID_2);
+			MediaStream mediaStream = pcFactory.createLocalMediaStream(LOCAL_MEDIA_STREAM_ID_SENDER);
 			//MediaStream mediaStream = pcFactory.createLocalMediaStream(LOCAL_MEDIA_STREAM_ID_2+senderCount);
 			senderClient.attachLocalMediaStream(mediaStream);
 			senderClient.attachRTCListener(new myRTCListener());

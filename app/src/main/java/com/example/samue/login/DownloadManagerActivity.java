@@ -100,13 +100,14 @@ public class DownloadManagerActivity extends AppCompatActivity {
 								json.put("type", "RA");
 								json.put(Utils.NAME, dl.getFileName());
 								json.put(Utils.CANCEL_DL, true);
-								Profile.pnRTCClient.transmit(dl.getFriend(), json);
-								//Profile.pnRTCClient.closeConnection(dl.getFriend());
 								if (dl.isRunning()) {
 									downloadService.stopDownload(dl.getPath(), dl.getFileName());
 									dl.setStopped();
-									dl.deleteFile();
+									//dl.deleteFile();
 								}
+
+								Profile.downloaderClient.transmit(dl.getFriend(), json);
+								//Profile.pnRTCClient.closeConnection(dl.getFriend());
 								al_downloads.remove(dl);
 							}
 							catch (JSONException e){
