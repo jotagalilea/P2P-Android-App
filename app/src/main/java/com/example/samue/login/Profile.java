@@ -51,6 +51,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -104,6 +105,9 @@ public class Profile extends AppCompatActivity {
 	private Intent dl_intent;
 	private boolean serviceBound = false;
 	private boolean mobileDataBlocked;
+	static ArrayList<Groups> listgroups;
+
+
 	private ServiceConnection serviceConnection = new ServiceConnection(){
 		@Override
 		public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -118,6 +122,7 @@ public class Profile extends AppCompatActivity {
 			Log.e("ERROR EN DESCARGA", "SERVICIO DESCONECTADO INESPERADAMENTE");
 		}
 	};
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -135,6 +140,9 @@ public class Profile extends AppCompatActivity {
 		friends_list = (ListView) findViewById(R.id.friends_list);
 		sendersManager = SendersManager.getSingleton();
 		sendersManager.start();
+
+		loadGroupList();
+
 		populateListView();
 
 		friends_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -215,8 +223,8 @@ public class Profile extends AppCompatActivity {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(Profile.this, listGroupsActivity.class);
-				//intent.putExtra("friendsList", al_friends);
-				startActivityForResult(intent, 1);
+				intent.putExtra("username", username);
+				startActivityForResult(intent, 6);
 			}
 		});
 
@@ -359,6 +367,28 @@ public class Profile extends AppCompatActivity {
 				loadSharedFolders();
 				loadFoldersAccess();
 				break;
+			case 6:
+				try {
+					// Si hay grupos nuevos, modificados o con ficheros moodificados:
+					ArrayList<Groups> newgroups = (ArrayList<Groups>) data.getSerializableExtra("newgroups");
+					if (!newgroups.isEmpty()) {
+						//ArrayList<Groups> finalgroups = addnewgroups(newgroups);
+						for (int i = 0; i < newgroups.size(); i++) {
+							NG(newgroups.get(i));
+						}
+					}
+					ArrayList<Groups> deletegroups = (ArrayList<Groups>) data.getSerializableExtra("deletegroups");
+					if (!deletegroups.isEmpty()) {
+						for (int i = 0; i < newgroups.size(); i++) {
+							DG(deletegroups.get(i));
+						}
+					}
+
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
+				break;
+
 			default:
 				if(!userRecursos.equals("")){
 					cerrarConexion(userRecursos);
@@ -492,6 +522,7 @@ public class Profile extends AppCompatActivity {
 					}
 				});
 				return true;
+				/*
 			case R.id.add_group:
                 //llevar a la nueva actividad de crear grupo
                 mdialogGroup = new Dialog(Profile.this);
@@ -505,11 +536,16 @@ public class Profile extends AppCompatActivity {
                         mdialogGroup.dismiss();
                         Intent myIntent = new Intent(Profile.this, friendsgroup.class);
                         myIntent.putExtra("nameGroup", nameGroup.getText().toString());
+                        myIntent.putExtra("username",username);
+                        myIntent.putExtra("valor",1); //valor=1, crear grupo, valor=2, añadir amigos nuevos
+
                         startActivityForResult(myIntent, 3);
                     }
 
                 });
                 return true;
+
+				 */
 			default:
 				// If we got here, the user's action was not recognized.
 				// Invoke the superclass to handle it.
@@ -1173,9 +1209,6 @@ public class Profile extends AppCompatActivity {
 
 
 
-
-
-
 	/**
 	 * Hilo para el envío de 1 archivo.
 	 */
@@ -1366,6 +1399,8 @@ public class Profile extends AppCompatActivity {
 					handleSA(jsonMsg);
 				}else if(type.equals("VSF")){
 					handleVSF(jsonMsg);
+				}else if(type.equals("NG")){
+					handleNG(jsonMsg);
 				}
 
 			} catch (JSONException e){
@@ -1442,8 +1477,136 @@ public class Profile extends AppCompatActivity {
 			catch (CursorIndexOutOfBoundsException e){ e.printStackTrace();}
 		}
 	}
+	private void loadGroupList() {
+		Cursor c = mDatabaseHelper.getData(DatabaseHelper.GROUPS_TABLE_NAME);
+		if (listgroups != null){listgroups.clear();}
+		else {listgroups = new ArrayList<>();}
 
+		while (c.moveToNext()) {
+			ArrayList<Friends> friends = stringtoArrayListFriend(c.getString(1));
+			ArrayList files = stringtoArrayList(c.getString(2));
+			ArrayList<Friends> owners = stringtoArrayListFriend(c.getString(3));
+			Groups g = new Groups(c.getString(0), R.drawable.icongroup, friends, files, owners, c.getString(4));
+			listgroups.add(g);
+		}
+	}
+	private ArrayList<Friends> stringtoArrayListFriend(String friends){
+		if (friends == null){return new ArrayList<>();}
+		ArrayList<Friends> resultado= new ArrayList<>();
+		String[] friendsSeparate = friends.split(",");
+		for (int i=0; i<friendsSeparate.length; i++){
+			resultado.add(new Friends(friendsSeparate[i],R.drawable.astronaura));
+		}
+		return resultado;
+	}
+	private ArrayList stringtoArrayList(String files){
+		if (files == null){
+			return new ArrayList<>();
+		}
+		ArrayList resultado= new ArrayList();
+		String[] filesSeparate = files.split(",");
+		for (int i=0; i<filesSeparate.length; i++){
+			resultado.add(filesSeparate[i]);
+		}
+		return resultado;
+	}
+	private ArrayList<Groups> addnewgroups(ArrayList<Groups> newgroups){
+		ArrayList<Groups> resultado=new ArrayList<>();
+		for(Groups g: newgroups){
+			if( !listgroups.contains(g)){
+				resultado.add(g);
+			}
+		}
+		return resultado;
+	}
+	private void NG(Groups group){
+		ArrayList<Friends> friendslist=group.getListFriends();
 
+		try{
+			for(int i=1; i<friendslist.size(); i++) {
+				JSONObject msg = new JSONObject();
+				msg.put("type", "NG");
+				msg.put("nameGroup", group.nameGroup);
+				msg.put("imgGroup", group.imgGroup);
+				msg.put("listFriends",arrayListToString(group.listFriends));
+				msg.put("listFiles", Utils.joinStrings(",",group.listFiles));
+				msg.put("listOwners", arrayListToString(group.listOwners));
+				msg.put("admin", group.administrator);
+				this.pnRTCClient.transmit(friendslist.get(i).getNombre(), msg);
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	private void handleNG(JSONObject grupojson){
+		try{
+			String nameGroup =(String)grupojson.get("nameGroup");
+			ArrayList<Friends> listFriends =stringtoArrayListFriend(grupojson.getString("listFriends"));
+			int img =grupojson.getInt("imgGroup");
+			ArrayList listFiles = new ArrayList( Arrays.asList(grupojson.getString("listFiles").split(",")));
+			ArrayList<Friends> listOwners =stringtoArrayListFriend(grupojson.getString("listOwners"));
+			String admin =grupojson.getString("admin");
+			Groups groupnew = new Groups(nameGroup,img, listFriends,listFiles,listOwners,admin);
+
+			if (mDatabaseHelper.existGroup(groupnew.nameGroup)){
+				boolean remove = mDatabaseHelper.deleteGroup(groupnew.nameGroup,mDatabaseHelper.GROUPS_TABLE_NAME);
+			}
+			boolean inserted = mDatabaseHelper.addGroup(groupnew.getNameGroup(), ArrayListFriendToString(groupnew.getListFriends()), groupnew.getAdministrador());
+
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+	private void DG(Groups group){
+		ArrayList<Friends> friendslist=group.getListFriends();
+
+		try{
+			for(int i=1; i<friendslist.size(); i++) {
+				JSONObject msg = new JSONObject();
+				msg.put("type", "NG");
+				msg.put("nameGroup", group.nameGroup);
+				this.pnRTCClient.transmit(friendslist.get(i).getNombre(), msg);
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	private void handleDG(JSONObject grupojson){
+		try{
+			String nameGroup =(String)grupojson.get("nameGroup");
+			//Groups groupnew = new Groups(nameGroup,img, listFriends,listFiles,listOwners,admin);
+
+			if (mDatabaseHelper.existGroup(nameGroup)){
+				boolean remove = mDatabaseHelper.deleteGroup(nameGroup,mDatabaseHelper.GROUPS_TABLE_NAME);
+			}
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+	private String ArrayListFriendToString (ArrayList<Friends> list) {
+		String resultado = "";
+		for (int i = 0; i < list.size(); i++) {
+			resultado = resultado + list.get(i).getNombre();
+		}
+		return resultado;
+	}
+	//pasar de un array lists de amigos a un string
+	private String arrayListToString(ArrayList<Friends> listfriend) {
+		String myString ="";
+
+		for (int i = 0; i<listfriend.size();i++){
+			if (myString.equals("")){
+				myString=listfriend.get(i).getNombre();
+				if (i < (listfriend.size() - 1)){myString = myString + ",";}
+			}else {
+				myString = myString + listfriend.get(i).getNombre();
+				if (i < (listfriend.size() - 1)) {
+					myString = myString + ",";
+				}
+			}
+		}
+		return myString;
+	}
 
 	@Override
 	protected void onDestroy(){

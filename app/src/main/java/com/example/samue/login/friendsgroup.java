@@ -1,5 +1,6 @@
 package com.example.samue.login;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
 import android.support.design.widget.FloatingActionButton;
@@ -14,6 +15,7 @@ import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,12 +31,19 @@ public class friendsgroup extends AppCompatActivity {
     private RVadapter rvadapter;
     private RecyclerView.LayoutManager layoutManager;
     private ArrayList<Friends> friends;
+    private ArrayList<Friends> friendsviews;
     private ArrayList<Friends> friendsSelected;
+    private ArrayList<Friends> friendsSelectedfinish;
     public SparseBooleanArray selectedItems;
     private ArrayList files;
     private String nameGroup;
+    private String aux;
+    private String administrator;
     private Groups newGroup;
     private DatabaseHelper helperGroup;
+    public String username;
+    static DatabaseHelper groupDatabaseHelper;
+    private int valor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,16 +52,23 @@ public class friendsgroup extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.group_toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Selecciona los amigos");
+        helperGroup = new DatabaseHelper(this);
+        groupDatabaseHelper = new DatabaseHelper(this);
+
 
         Bundle extras = getIntent().getExtras();
         nameGroup = extras.getString("nameGroup");
+        administrator = extras.getString("username");
+        username =extras.getString("username");
+        valor = extras.getInt("valor");
 
-
-        //ArrayList<Friends> friends= new ArrayList<>();
-        //llamar a base de datos u cargar amigos de verdad, no lista estatica
-        friends=listadeamigos();
-        friendsSelected=new ArrayList<>();
-
+        if(valor == 1) {friendslist();}
+        if(valor == 2) {
+            aux = extras.getString("friendsold");
+            friendslist2(aux);
+        }
+        friendsSelected = new ArrayList<>();
+        friendsSelectedfinish = new ArrayList<>();
 
         recyclerView = (RecyclerView) findViewById(R.id.rv_friendsgroup);
 
@@ -65,90 +81,185 @@ public class friendsgroup extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
 
         // specify an adapter (see also next example)
-        rvadapter = new RVadapter(friends);
+        rvadapter = new RVadapter(friendsviews);
         recyclerView.setAdapter(rvadapter);
-
-
-
-
-
 
         FloatingActionButton button = findViewById(R.id.createGroup);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                friendsSelected=rvadapter.obtenerSeleccionados();
+                boolean add;
 
-                newGroup= new Groups(nameGroup,R.drawable.icongroup,friendsSelected);
-                //Falta la implemenntacion de guardar los datos en la BBDD
-                addGroup(nameGroup,friendsSelected);
+                if (valor == 1) {
+                    friendsSelected = rvadapter.obtenerSeleccionados();
+                    friendsSelectedfinish.add(new Friends(username, R.drawable.ic_launcher_foreground));
+                    friendsSelectedfinish.addAll(friendsSelected);
 
-                Toast.makeText(getApplicationContext(), "Group "+ nameGroup + " has been created", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(friendsgroup.this, listGroupsActivity.class);
-                startActivityForResult(intent, 1);
-                finish();
+                    newGroup = new Groups(nameGroup, R.drawable.icongroup, friendsSelectedfinish, administrator);
+                    add = addGroupBBDD(nameGroup, friendsSelectedfinish, administrator);
+                    if (add) {
+                        Toast.makeText(getApplicationContext(), "Group " + nameGroup + " has been created", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent();
+                        /*intent.putExtra("username", username);
+                        intent.putExtra("newgroupname",nameGroup);
+                        intent.putExtra("newFriends",friendsSelectedfinish);
+                        */
+                        intent.putExtra("newGroup",newGroup);
+                        setResult(Activity.RESULT_OK,intent);
+                        finish();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
+                    }
+                }else if (valor == 2){
+                    friendsSelected = rvadapter.obtenerSeleccionados();
+                    friendsSelectedfinish.addAll(stringtoArrayListFriend(aux));
+                    friendsSelectedfinish.addAll(friendsSelected);
+                    add = updateGroupBBDD(nameGroup, friendsSelectedfinish);
+                    if (add) {
+                        Toast.makeText(getApplicationContext(), "Friends selected has been added", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent();
+                        intent.putExtra("friends",friendsSelectedfinish);
+                        setResult(Activity.RESULT_OK,intent);
+                        finish();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
+                    }
+
+                }else{
+                    Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
-    // ...
-    public ArrayList<Friends> listadeamigos(){
-        ArrayList<Friends> listFriends= new ArrayList<>();
-        listFriends.add(new Friends("Alex", R.drawable.astronaura));
-        listFriends.add(new Friends("Alba", R.drawable.cohete));
-        listFriends.add(new Friends("Rupert", R.drawable.astronaura));
-        return listFriends;
+
+    // cargar lista de amigos
+    public void friendslist() {
+        Cursor data = groupDatabaseHelper.getData(DatabaseHelper.FRIENDS_TABLE_NAME);
+        friends = new ArrayList<>();
+        friendsviews= new ArrayList<>();
+        while(data.moveToNext()){
+            friends.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
+            friendsviews.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
+        }
+    }
+    public void friendslist2(String friendsold) {
+        ArrayList<Friends> friendsaux;
+        friendsaux=stringtoArrayListFriend(friendsold);
+        Cursor data = groupDatabaseHelper.getData(DatabaseHelper.FRIENDS_TABLE_NAME);
+        friends = new ArrayList<>();
+        friendsviews= new ArrayList<>();
+        while(data.moveToNext()){
+            if (stringisfriend(friendsaux,data.getString(1))){}
+            else {
+                friendsviews.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
+            }
+            friends.add(new Friends(data.getString(1), R.drawable.ic_launcher_foreground));
+        }
+    }
+    public boolean stringisfriend(ArrayList<Friends> friendsold, String nuevo){
+        ArrayList<Friends> friendstmp=new ArrayList<>();
+        friendstmp=friendsold;
+        for(Friends f : friendstmp){
+            if (f.getNombre().equals(nuevo))
+                return true;
+        }
+        return false;
     }
 
-    /**
-     * Bloqueo de un usuario. Se inserta en la BD y se recarga la IU y el arrayList.
-     * @param name nombre del usuario.
-     */
-    private void addGroup(String name, ArrayList<Friends> listFriends){
-        boolean inserted = helperGroup.addGroup(name, helperGroup.GROUPS_TABLE_NAME);
+    //añadir el grupo creado a la BBDD
+    private boolean addGroupBBDD(String name, ArrayList<Friends> listFriends, String administrator) {
+        String listFriendStrings = arrayListToString(listFriends);
+
+        boolean inserted = helperGroup.addGroup(name, listFriendStrings, administrator);
         if (inserted)
-            loadGroups();
+            return inserted;
+        else
+            return false;
+    }
+    private boolean updateGroupBBDD(String nameupdate, ArrayList<Friends> friendsupdate){
+        String friendsupdatestring = arrayListToString(friendsupdate);
+        boolean inserted = helperGroup.addFriendsGroup(nameupdate,friendsupdatestring, helperGroup.GROUPS_TABLE_NAME);
+        if (inserted)
+            return inserted;
+        else
+            return false;
     }
 
-    /**
-     * Desbloqueo de un usuario. Se borra de la BD y se recarga la IU y el arrayList.
-     * @param name nombre del usuario.
-     */
-    private void removeGroup(String name){
-        boolean removed = helperGroup.removeData(name, helperGroup.GROUPS_TABLE_NAME);
+
+
+
+    // ----------------------a partir de aqui revisar que esto no sobre-------------------
+
+    private void removeGroup(String name) {
+        boolean removed = helperGroup.deleteGroup(name, helperGroup.GROUPS_TABLE_NAME);
         if (removed)
             loadGroups();
     }
-    /**
-     * Se recupera los datos de la tabla de bloqueados de la BD y se recarga el arrayList y la IU.
-     */
-    private void loadGroups(){
+
+    private void loadGroups() {
         Cursor c = helperGroup.getData(helperGroup.GROUPS_TABLE_NAME);
         friends.clear();
 
-        while(c.moveToNext())
+        while (c.moveToNext())
             friends.add(new Friends(c.getString(1), R.drawable.ic_launcher_foreground));
         rvadapter = new RVadapter(friends);
         recyclerView.setAdapter(rvadapter);
     }
 
+    //usar esta funcion para comprobar que no se crea un grupo igual al que ya pertenezca
     /**
      * Averigua si existe un objeto Groups cuyo nombre coincida con nameGroup.
-     * @param nameGroup 	nombre del usuario que se busca.
-     * @param gr 	ArrayList en el que se busca.
-     * @return 		Objeto friends si existe, o null en caso contrario.
+     *
+     * @param nameGroup nombre del grupo que se busca.
+     * @param gr        ArrayList en el que se busca.
+     * @return Objeto group si existe, o null en caso contrario.
      */
-    private Groups customListContains(String nameGroup, ArrayList<Groups> gr){
-        for(Groups g : gr){
-            if(g.getNameGroup().equals(nameGroup)){
+    private Groups customListContains(String nameGroup, ArrayList<Groups> gr) {
+        for (Groups g : gr) {
+            if (g.getNameGroup().equals(nameGroup)) {
                 return g;
             }
         }
         return null;
     }
 
+    //pasar de un array lists de amigos a un string
+    private String arrayListToString(ArrayList<Friends> listfriend) {
+        String myString =null;
 
-
-
+        for (int i = 0; i<listfriend.size();i++){
+            if (myString==null){
+                myString=listfriend.get(i).getNombre();
+                if (i < (listfriend.size() - 1)){myString = myString + ",";}
+            }else {
+                myString = myString + listfriend.get(i).getNombre();
+                if (i < (listfriend.size() - 1)) {
+                    myString = myString + ",";
+                }
+            }
+        }
+        return myString;
+    }
+    private ArrayList<Friends> stringtoArrayListFriend(String friends){
+        if (friends == null){return new ArrayList<>();}
+        ArrayList<Friends> resultado= new ArrayList<>();
+        String[] friendsSeparate = friends.split(",");
+        for (int i=0; i<friendsSeparate.length; i++){
+            resultado.add(new Friends(friendsSeparate[i],R.drawable.astronaura));
+        }
+        return resultado;
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        super.onActivityResult(requestCode, resultCode, data);
+        switch(requestCode) {
+            case 6:
+                if (resultCode == Activity.RESULT_OK) {
+                    setResult(Activity.RESULT_OK, data);
+                    finish();
+                }
+        }
+    }
 
 }
 

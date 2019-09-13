@@ -6,6 +6,9 @@
     <string name="title_activity_blocked_users">Usuarios bloqueados</string>
     <string name="title_activity_download_manager">Administrador de descargas</string>
     <string name="title_activity_list_group">Lista de grupos</string>
+    <string name="title_activity_list_friends_group">Lista de amigos del grupo</string>
+    <string name="title_activity_list_files_group">Lista de archivos del grupo</string>
+    <string name="title_activity_archive_explorer_group">archivos</string>
     <string name="download_item_filename">Download_item.file</string>
     <string name="download_item_size">52.50 MB</string>
     <string name="download_item_speed">250 KB/s</string>
@@ -20,9 +23,8 @@
     <string name="see_shared_folders_title">Carpetas compartidas</string>
     <string name="folder_name">Nombre carpeta</string>
     <string name="users_shared_with_title">Amigos con acceso</string>
-    <string name="text_group">Opciones:</string>
+    <string name="text_group">Que quieres ver?</string>
     <string name="files_button">Ver archivos</string>
     <string name="friends_button">Ver amigos</string>
-
 
 </resources>

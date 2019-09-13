@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.samue.login">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> <!-- WebRTC Dependencies -->
@@ -34,7 +35,8 @@
         android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar">
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        tools:ignore="GoogleAppIndexingWarning">
         <activity android:name=".friendsgroup"></activity>
         <activity
             android:name=".UsersSharedWithActivity"
@@ -61,6 +63,18 @@
         <activity
             android:name=".listGroupsActivity"
             android:label="@string/title_activity_list_group"
+            android:theme="@style/NoActionBar"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name=".friendsGroupActivity"
+            android:label="@string/title_activity_list_friends_group"
+            android:theme="@style/NoActionBar"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name=".filesGroupActivity"
+            android:label="@string/title_activity_list_files_group"
             android:theme="@style/NoActionBar"
             android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden"/>
@@ -93,6 +107,10 @@
             android:configChanges="orientation|keyboardHidden"/>
         <activity
             android:name=".ArchiveExplorer"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name=".ArchiveExplorerGroups"
             android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden"/>
 
