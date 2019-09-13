@@ -385,33 +385,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * Añade ficheros a la lista de archivos compartidos de un grupo.
-	 * @param friendsNames Lista de nombres de los amigos a añadir.
-	 * @param nameGroup Nombre de la carpeta compartida.
-	 * @return true si la inserción ha tenido éxito. false en otro caso.
-	 */
-	public boolean addFiles2Group(ArrayList<String> friendsNames, String nameGroup){
-		SQLiteDatabase db = this.getWritableDatabase();
-		// Primero obtengo los id de los usuarios que se van a añadir:
-		String queryIDs = getUsersIDsQuery(friendsNames);
-		Cursor ids = db.rawQuery(queryIDs, null);
-
-		// Después, con un cursor a los ids voy insertando en la tabla de acceso:
-		ContentValues contentValues = new ContentValues();
-		long result = 0;
-		while (ids.moveToNext() && (result != -1)){
-			contentValues.clear();
-			contentValues.put(FOLDER_ACCESS_COL1, nameGroup);
-			contentValues.put(FOLDER_ACCESS_COL2, ids.getInt(0));
-			result = db.insert(FOLDER_ACCESS_TABLE, null, contentValues);
-		}
-		Log.d(TAG, "addData: Adding to " + FOLDER_ACCESS_TABLE + " rows:\n" + friendsNames);
-		if (result == -1)
-			return false;
-		else
-			return true;
-	}
-	/**
 	 * Añade amigos al grupo.
 	 * @param friendsNames Lista de nombres de los amigos a añadir.
 	 * @param nameGroup Nombre del grupo al que se van a añadir

@@ -29,6 +29,7 @@ public class filesGroupActivity extends AppCompatActivity {
 
 	private String username;
 	private String namegroup;
+	Groups group;
 
 	static DatabaseHelper filesgroupDatabaseHelper;
 
@@ -44,6 +45,7 @@ public class filesGroupActivity extends AppCompatActivity {
 		namegroup= extras.getString("namegroup");
 		listnamefilesstring=extras.getString("lista");
 		listownersfilesstring=extras.getString("owners");
+		group =(Groups) extras.getSerializable("group");
 		listnamefiles = new ArrayList();
 		loadfilesGroup();
 
@@ -165,12 +167,13 @@ public class filesGroupActivity extends AppCompatActivity {
 		addFile.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				Intent intent = new Intent(filesGroupActivity.this, ArchiveExplorerGroup.class);
+				Intent intent = new Intent(filesGroupActivity.this, ArchiveExplorerGroups.class);
 				intent.putExtra("username", username);
-				intent.putExtra("namegrou",namegroup);
+				intent.putExtra("namegroup",namegroup);
 				intent.putExtra("listfiles",listnamefilesstring);
 				intent.putExtra("listowners",listownersfilesstring);
-				startActivityForResult(intent, 1);
+				intent.putExtra("group",group);
+				startActivityForResult(intent,1);
 			}
 		});
 	}

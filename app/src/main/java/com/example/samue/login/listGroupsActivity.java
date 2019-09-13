@@ -58,8 +58,10 @@ public class listGroupsActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                final Groups groupactual;
                 loadGroupList();
                 nameGroup = listGroups.get(i).getNameGroup();
+                groupactual=listGroups.get(i);
                 final Groups group = listGroups.get(i);
                 final Dialog dialog = new Dialog(listGroupsActivity.this);
                 dialog.setContentView(R.layout.dialog_group);
@@ -80,9 +82,9 @@ public class listGroupsActivity extends AppCompatActivity {
                         intent.putExtra("lista", files);
                         intent.putExtra("listener", false);
                         intent.putExtra("owners", arrayListToString(group.getListOwners()));
-
                         intent.putExtra("username",username);
                         intent.putExtra("namegroup",group.getNameGroup());
+                        intent.putExtra("grupo",groupactual);
                         startActivityForResult(intent, 3);
                         //Intent intent = new Intent(listGroupsActivity.this, friendsGroupActivity.class);
                         //intent.putExtra("folderName", folder_name);

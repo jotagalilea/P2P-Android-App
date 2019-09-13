@@ -6,10 +6,10 @@
     android:layout_height="match_parent"
     android:background="@drawable/background"
     android:orientation="vertical"
-    tools:context="com.example.samue.login.ArchiveExplorerGroup">
+    tools:context="com.example.samue.login.ArchiveExplorerGroups">
 
     <TextView
-        android:id="@+id/rutaActual"
+        android:id="@+id/rutaActual_grupos"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/colorPrimaryDark"
@@ -20,13 +20,13 @@
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
     <ListView
-        android:id="@+id/lista_items"
+        android:id="@+id/lista_items_grupos"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/rutaActual"></ListView>
-
+        android:layout_below="@id/rutaActual_grupos"></ListView>
+<!---
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab_folder_share"
+        android:id="@+id/fab_folder_share_grupos"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
@@ -39,6 +39,6 @@
         android:src="@android:drawable/sym_contact_card"
         app:backgroundTint="@android:color/holo_blue_light"
         app:fabSize="normal" />
-
+-->
 
 </RelativeLayout>

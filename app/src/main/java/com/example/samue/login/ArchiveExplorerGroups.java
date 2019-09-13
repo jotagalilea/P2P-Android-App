@@ -1,5 +1,6 @@
 package com.example.samue.login;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -21,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class ArchiveExplorerGroup extends AppCompatActivity {
+public class ArchiveExplorerGroups extends AppCompatActivity {
     private Dialog mdialog;
     private ArrayList listaNombresArchivos;
     private List listaRutasArchivos;
@@ -31,31 +32,29 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
     private String currentFolder;
     private ListView listaItems;
     private FloatingActionButton fab;
+    private File[] listaArchivos;
+    static DatabaseHelper filesDatabaseHelper;
+    String username;
+    String groupname;
+    Groups group;
 
-    private File[]listaArchivos;
-    private String username;
-    private String namegroup;
-    private String filesstring;
-    private String ownersstring;
-    private DatabaseHelper helperGroup;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_archive_explorer_group);
+        setContentView(R.layout.activity_archive_explorer_groups);
+        filesDatabaseHelper = new DatabaseHelper(this);
 
-        carpetaActual = findViewById(R.id.rutaActual);
-        listaItems = findViewById(R.id.lista_items);
+        carpetaActual = findViewById(R.id.rutaActual_grupos);
+        listaItems = findViewById(R.id.lista_items_grupos);
+        directorioRaiz = Environment.getExternalStorageDirectory().getPath();
+        verArchivosDirectorio(directorioRaiz);
 
         Bundle extras = getIntent().getExtras();
-        username = extras.getString("username");
-        namegroup = extras.getString("namegroup");
-        filesstring=extras.getString("listfiles");
-        ownersstring=extras.getString("listowners");
+        username= extras.getString("username");
+        groupname=extras.getString("namegroup");
+        group = (Groups) extras.getSerializable("group");
 
-        directorioRaiz = Environment.getExternalStorageDirectory().getPath();
-
-        verArchivosDirectorio(directorioRaiz);
 
         // Compartir un archivo:
         listaItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -69,7 +68,7 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
                     final String name = archivo.getName();
                     final String path = archivo.getPath();
 
-                    mdialog = new Dialog(ArchiveExplorerGroup.this);
+                    mdialog = new Dialog(ArchiveExplorerGroups.this);
                     mdialog.setContentView(R.layout.dialog_confirmsharedarchive);
                     mdialog.show();
 
@@ -90,16 +89,37 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
                         @Override
                         public void onClick(View v) {
                             boolean add;
-
-                            add = addfilegroupBBDD(namegroup, name, username);
+                            mdialog.dismiss();
+                            final ProgressDialog progressDialog = new ProgressDialog(ArchiveExplorerGroups.this);
+                            progressDialog.setIndeterminate(true);
+                            progressDialog.setMessage("Subiendo " + name + "...");
+                            progressDialog.show();
+                            //hay que ver si pasamos tura completa, nombre o que
+                            add = updateGroupBBDD(groupname, name, group);
                             if (add) {
-                                Toast.makeText(getApplicationContext(), "File " + name + " has been add", Toast.LENGTH_SHORT).show();
-
-                            }
-                            else {
+                                Toast.makeText(getApplicationContext(), "File selected has been added", Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent();
+                                //intent.putExtra("friends",friendsSelectedfinish);
+                                setResult(Activity.RESULT_OK,intent);
+                                finish();
+                            } else {
                                 Toast.makeText(getApplicationContext(), "Ha ocurrido un error", Toast.LENGTH_SHORT).show();
                             }
-                            finish();
+
+
+
+                            new android.os.Handler().postDelayed(new Runnable() {
+                                public void run() {
+                                    // On complete call either onLoginSuccess or onLoginFailed
+                                    Uri dato = Uri.parse("content://name/" + name);
+                                    Intent resultado = new Intent(null, dato);
+                                    resultado.putExtra("name", name);
+                                    resultado.putExtra("path", path);
+                                    setResult(RESULT_OK, resultado);
+                                    finish();
+                                    progressDialog.dismiss();
+                                }
+                            }, 2000);
 
                         }
                     });
@@ -110,13 +130,13 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
                 }
             }
         });
-
+        /*
         // Compartir carpeta:
-        fab = findViewById(R.id.fab_folder_share);
+        fab = findViewById(R.id.fab_folder_share_grupos);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mdialog = new Dialog(ArchiveExplorerGroup.this);
+                mdialog = new Dialog(ArchiveExplorerGroups.this);
                 mdialog.setContentView(R.layout.dialog_share_folder);
                 mdialog.show();
 
@@ -132,7 +152,7 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
                 yes.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        final ProgressDialog progressDialog = new ProgressDialog(ArchiveExplorerGroup.this);
+                        final ProgressDialog progressDialog = new ProgressDialog(ArchiveExplorerGroups.this);
                         progressDialog.setIndeterminate(true);
                         progressDialog.setMessage("Compartiendo carpeta");
                         progressDialog.show();
@@ -141,7 +161,7 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
                                 new Runnable() {
                                     public void run() {
                                         // Abrir diálogo para añadir amigos:
-                                        final Dialog addFriendsDl = new Dialog(ArchiveExplorerGroup.this);
+                                        final Dialog addFriendsDl = new Dialog(ArchiveExplorerGroups.this);
                                         addFriendsDl.setContentView(R.layout.dialog_addfriendssharedfolder);
 
                                         // Obtener lista de amigos para elegir:
@@ -149,7 +169,7 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
                                         final ArrayList<Friends> friendsList = (ArrayList<Friends>) intent.getSerializableExtra("friendsList");
                                         final ArrayList<String> friendsNames = Utils.getFriendsArrayListAsStrings(friendsList);
                                         ListView selectionList = addFriendsDl.findViewById(R.id.select_friends_list);
-                                        final SelectFriends_Adapter fAdapter = new SelectFriends_Adapter(ArchiveExplorerGroup.this, friendsNames);
+                                        final SelectFriends_Adapter fAdapter = new SelectFriends_Adapter(ArchiveExplorerGroups.this, friendsNames);
                                         selectionList.setAdapter(fAdapter);
                                         progressDialog.dismiss();
                                         addFriendsDl.show();
@@ -180,7 +200,7 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
                                                 }
                                                 // Si no hay ninguno seleccionado...
                                                 else{
-                                                    Toast.makeText(ArchiveExplorerGroup.this, "ERROR: Ningún amigo seleccionado", Toast.LENGTH_SHORT).show();
+                                                    Toast.makeText(ArchiveExplorerGroups.this, "ERROR: Ningún amigo seleccionado", Toast.LENGTH_SHORT).show();
                                                 }
                                             }
                                         });
@@ -191,6 +211,8 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
                 });
             }
         });
+
+         */
     }
 
 
@@ -208,7 +230,7 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
         int x = 0;
 
         if (listaArchivos == null) {
-            Toast.makeText(ArchiveExplorerGroup.this, "No se puede acceder",Toast.LENGTH_LONG).show(); return;
+            Toast.makeText(ArchiveExplorerGroups.this, "No se puede acceder",Toast.LENGTH_LONG).show(); return;
         }
 
         // Si no es nuestro directorio raiz creamos un elemento que nos
@@ -251,16 +273,34 @@ public class ArchiveExplorerGroup extends AppCompatActivity {
         adaptador = new AEArrayAdapter(this, android.R.layout.simple_list_item_1, listaNombresArchivos);
         listaItems.setAdapter(adaptador);
     }
-    //añadir el archivo seleccionado a la BBDD
-    private boolean addfilegroupBBDD(String nameGrouptmp, String namefileadd, String owner) {
-        String filesnew = filesstring + ", " + namefileadd;
-        String ownersnew = ownersstring+ ", " + owner;
+    private boolean updateGroupBBDD(String nameupdate,String namefile, Groups group){
+        ArrayList files = group.listFiles;
+        ArrayList<Friends> owners = group.listOwners;
+        files.add(namefile);
+        owners.add(new Friends(username,R.drawable.ic_launcher_foreground));
 
-        boolean inserted = helperGroup.addFileGroup(nameGrouptmp, filesnew, ownersnew,helperGroup.GROUPS_TABLE_NAME);
+        boolean inserted = filesDatabaseHelper.addFileGroup(nameupdate,Utils.joinStrings(",",files),arrayListToString(owners),filesDatabaseHelper.GROUPS_TABLE_NAME);
         if (inserted)
+
             return inserted;
         else
             return false;
+    }
+    private String arrayListToString(ArrayList<Friends> listfriend) {
+        String myString ="";
+
+        for (int i = 0; i<listfriend.size();i++){
+            if (myString.equals("")){
+                myString=listfriend.get(i).getNombre();
+                if (i < (listfriend.size() - 1)){myString = myString + ",";}
+            }else {
+                myString = myString + listfriend.get(i).getNombre();
+                if (i < (listfriend.size() - 1)) {
+                    myString = myString + ",";
+                }
+            }
+        }
+        return myString;
     }
 
     @Override

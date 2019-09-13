@@ -183,7 +183,6 @@ public class friendsgroup extends AppCompatActivity {
             return inserted;
         else
             return false;
-
     }
 
 
