@@ -26,5 +26,6 @@
     <string name="text_group">Que quieres ver?</string>
     <string name="files_button">Ver archivos</string>
     <string name="friends_button">Ver amigos</string>
+    <string name="ask_exit">¿Deseas salir?</string>
 
 </resources>

@@ -363,27 +363,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		}
 	}
 
-	/**
-	 * Borra un amigo. Si este tenía acceso a alguna carpeta compartida se elimina de ellas.
-	 * @param name
-	 * @return
-	 */
-	public boolean deleteFriend(String name){
-		SQLiteDatabase db = getWritableDatabase();
-		Cursor user = db.query(FRIENDS_TABLE_NAME, new String[]{FRIENDS_COL1}, FRIENDS_COL2+"=?", new String[]{name},
-				null, null, null);
-		user.moveToNext();
-		String where = FOLDER_ACCESS_COL2+'='+user.getInt(0);
-		int result = db.delete(FOLDER_ACCESS_TABLE, where, null);
-
-		if (result == -1)
-			return false;
-		else{
-			removeData(name, FRIENDS_TABLE_NAME);
-			return true;
-		}
-	}
-
 
 	//Funciones relacionadas con los GRUPOS
 

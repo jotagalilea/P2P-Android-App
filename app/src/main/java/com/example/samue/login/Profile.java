@@ -1614,10 +1614,31 @@ public class Profile extends AppCompatActivity {
 		super.onDestroy();
 	}
 
+
+
 	@Override
 	public void onBackPressed(){
-		finish();
-		System.exit(0);
+		final Dialog d = new Dialog(Profile.this);
+		d.setContentView(R.layout.dialog_exit);
+		d.show();
+
+		Button yes = d.findViewById(R.id.button_exit_yes);
+		yes.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				d.dismiss();
+				finish();
+				System.exit(0);
+			}
+		});
+
+		Button no = d.findViewById(R.id.button_exit_no);
+		no.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				d.dismiss();
+			}
+		});
 	}
 
 }
