@@ -25,21 +25,11 @@
         app:actionViewClass="android.support.v7.widget.SearchView" />
 
     <item
-        android:id="@+id/crear"
+        android:id="@+id/add_friend"
         android:icon="@drawable/plus"
-        android:title="crear"
+        android:title="add_friend"
         android:visible="true"
         app:showAsAction="always">
-        <menu>
-            <item
-                android:id="@+id/add_friend"
-                android:title="add friend" />
-            <!---
-            <item
-                android:id="@+id/add_group"
-                android:title="add group" />
-                -->
-        </menu>
     </item>
     <item
         android:id="@+id/block_upload_mobile"
